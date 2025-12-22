@@ -21,6 +21,8 @@ env/
 *.pkl
 *.joblib
 football_model.pkl
+football_model_final.pkl
+
 
 # --- OS / Editor ---
 .DS_Store
