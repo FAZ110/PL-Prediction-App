@@ -1,0 +1,10 @@
+.grid{
+    width: 100%;
+    margin: 100px auto;
+    /* background-color: blue; */
+    padding: 20px;
+}
+
+.matches{
+    line-height: 40px;
+}
