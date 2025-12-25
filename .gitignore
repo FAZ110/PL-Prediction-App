@@ -28,3 +28,8 @@ football_model_final.pkl
 .DS_Store
 .vscode/
 .idea/
+
+# --- Node / Frontend ---
+frontend/node_modules/
+frontend/build/
+.DS_Store
