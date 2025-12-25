@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import axios from "axios"
 import "../styles/matchesGrid.css"
+import Match from "./Match";
 
 function MatchesGrid(){
     const [matches, setMatches] = useState([]);
@@ -32,13 +33,7 @@ function MatchesGrid(){
         <div className="grid">
             <div className="matches">
                 {matches.map((match, idx) => (
-                    <div className="match-card" key={idx}>
-                        <div className="teams">
-                            <span className="home">{match.homeTeam}</span>
-                            <span className="vs">VS</span>
-                            <span className="away">{match.awayTeam}</span>
-                        </div>
-                    </div>
+                    <Match data={match} key={idx}/>
                 ))}
             </div>
         </div>

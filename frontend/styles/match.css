@@ -1,0 +1,18 @@
+.match-container{
+    width: 100%;
+    /* background-color: aqua; */
+    
+}
+
+.match-desc{
+    display: flex;
+    align-items: center;
+    /* background-color: azure; */
+    margin: 10px;
+
+}
+
+.team{
+    font-weight: bold;
+    margin: 10px 10px;
+}
