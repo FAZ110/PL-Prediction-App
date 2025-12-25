@@ -1,59 +1,78 @@
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import requests
+import pickle
 import pandas as pd
-import joblib
-from prediction_engine import predict_match_optimized  # Import your function
+import os
 
-# --- 1. LOAD ARTIFACTS ---
-print("Loading model and data...")
-model = joblib.load('football_model_final.pkl')
-le = joblib.load('team_encoders.pkl')
-df_history = pd.read_csv('match_history.csv')
-df_history['DateTime'] = pd.to_datetime(df_history['DateTime'])
+app = FastAPI()
 
-# Define feature columns (Copy this list exactly from your notebook)
-feature_columns = [
-    'home_wins_last_5', 'home_draws_last_5', 'home_losses_last_5',
-    'away_wins_last_5', 'away_draws_last_5', 'away_losses_last_5',
-    'home_goals_scored_avg', 'home_goals_conceded_avg',
-    'away_goals_scored_avg', 'away_goals_conceded_avg',
-    'home_points_last_5', 'away_points_last_5', 'PointsDifference',
-    'HomeElo', 'AwayElo', 'EloDifference', 'HomeTeamCode', 'AwayTeamCode',
-    'home_sot_avg', 'home_corners_avg',
-    'away_sot_avg', 'away_corners_avg'
-]
+API_KEY = "27ab5b367f9443b188def13938ce9ef1"
+BASE_URL = "https://api.football-data.org/v4"
 
-# --- 2. DEFINE MATCHES TO PREDICT ---
-# Add your new fixtures here
-matches_to_predict = [
-    ("Man United", "Newcastle"),
-    ("Forest", "Man City"),
-    ("Liverpool", "Wolves"),
-    ("Arsenal", "Brighton"),
-    ("West Ham", "Fulham"),
-    ("Burnley", "Everton"),
-    ("Brentford", "Bournemouth"),
-    ("Chelsea", "Aston Villa"),
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+model_path = os.path.join(BASE_DIR, "football_model_final.pkl")
+
+try:
+    with open(model_path, "rb") as f:
+        model = pickle.load(f)
+    print("Model loaded successfully!")
+except FileNotFoundError:
+    print("WARNING: Model file not found. Prediction endpoint will fail.")
+
+
+class MatchPredictionRequest(BaseModel):
+    home_team: str
+    away_team: str
+
+
+# ENDPOINTS
+
+@app.get("/")
+def home():
+    return {"message": "Premier League Predictor API is Alive!"}
+
+
+@app.get("/upcoming")
+def get_upcoming_matches():
+
+    headers = {"X-Auth-Token": API_KEY}
+
+    url = f"{BASE_URL}/competitions/PL/matches?status=SCHEDULED"
+
+    response = requests.get(url, headers=headers)
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail="Failed to fetch matches")
     
-    
-    # Add more...
-]
+    data = response.json()
+    matches = []
 
-# --- 3. RUN LOOP ---
-print(f"\n{'MATCH':<35} {'PREDICTION':<15} {'CONFIDENCE':<12} {'NOTE'}")
-print("="*80)
+    for match in data.get("matches", [])[:10]:
+        matches.append({
+            "homeTeam": match['homeTeam']['shortName'],
+            "awayTeam": match['awayTeam']['shortName'],
+            "date": match['utcDate'],
+            "matchday": match['matchday']
+        })
+    return matches
 
-for home, away in matches_to_predict:
-    result = predict_match_optimized(model, home, away, df_history, le, feature_columns)
-    
-    if result:
-        winner, probs, h_stats, a_stats = result
-        confidence = max(probs)
-        
-        note = ""
-        if confidence > 0.50:
-            note = "!!! VERY CONFIDENT BET !!!"
-        elif confidence > 0.45:
-            note = "IT IS SAFE BET!"
-        
-            
-        match_str = f"{home} vs {away}"
-        print(f"{match_str:<35} {winner:<15} {confidence:.1%}      {note}")
+@app.get("/predict")
+def predict_match(match: MatchPredictionRequest):
+
+    # DUMMY
+
+    return {
+        "home_team": match.home_team,
+        "away_team": match.away_team,
+        "prediction": "Home Win", 
+        "confidence": 0.75
+    }
