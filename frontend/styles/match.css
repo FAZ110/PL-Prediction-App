@@ -7,12 +7,31 @@
 .match-desc{
     display: flex;
     align-items: center;
+    justify-content: space-between;
     /* background-color: azure; */
-    margin: 10px;
+    margin: 20px 0;
 
 }
 
 .team{
     font-weight: bold;
     margin: 10px 10px;
+}
+
+.info{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    
+}
+
+.date{
+    padding: 0;
+    margin: 0;
+}
+
+.matchday{
+    padding: 0;
+    margin: 0;
 }

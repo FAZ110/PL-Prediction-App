@@ -1,12 +1,18 @@
 .grid{
-    width: 100vw;
-    /* margin: 100px auto; */
-    max-width: 500px;
-    /* background-color: blue; */
-    padding: 20px;
-    border-left: 1px solid white;
+    
+    
 }
 
 .matches{
     line-height: 40px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 50px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+header{
+    font-size: 1.3rem;
+    font-weight: bolder;
 }
