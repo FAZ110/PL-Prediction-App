@@ -36,28 +36,34 @@ function Match({ data }){
                     <span className="team">{homeTeam}</span>
                     <span className="vs">VS</span>
                     <span className="team">{awayTeam}</span>
-
-                </div>
-                <div className="info">
                     <p className="date">{formattedDate}</p>
-                    <p className="matchday">Matchday: {matchday}</p>
-                </div>
 
-                <button 
-                    className="predict-btn"
-                    onClick={handlePrediction}
-                    disabled={loading}>
-                        {loading ? "Thinking..." : "Predict"} 
-                </button>
+                </div>
+                
+                    
+                    
+                <div className="match-pred">
+                    <button 
+                        className="predict-btn"
+                        onClick={handlePrediction}
+                        disabled={loading}>
+                            {loading ? "Thinking..." : "Predict"} 
+                    </button>
+
+                    {prediction && (
+                        <div className="prediction-result">
+                            
+                            <h3 className="winner">Winner: {prediction.prediction}</h3>
+                            <p className="confidence">Confidence: {(prediction.confidence * 100).toFixed(2)}%</p>
+                        </div>
+                    )}
+
+                </div>
+                
                 
             </div>
 
-            {prediction && (
-                <div className="prediction-result">
-                    <h3 className="winner">Winner: {prediction.prediction}</h3>
-                    <p className="confidence">Confidence: {(prediction.confidence * 100).toFixed(2)}%</p>
-                </div>
-            )}
+            
 
             {error && <p className="error">{error}</p>}
 
