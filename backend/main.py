@@ -5,8 +5,10 @@ import requests
 import joblib
 import pandas as pd
 import os
+import io
 
 from prediction_engine import predict_match_optimized
+
 
 app = FastAPI()
 
@@ -123,3 +125,66 @@ def predict_match(match: MatchPredictionRequest):
         }
     else:
         return {"error": f"Could not predict. Maybe team name was wrong {match.home_team} or {match.away_team}?"}
+
+
+
+# --- AUTOMATIC DATA UPDATED ---
+
+def update_match_history():
+    global df_history, model, le
+
+    url = "https://www.football-data.co.uk/mmz4281/2526/E0.csv"
+
+    print(f"⬇️ Downloading latest data from {url}...")
+
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+
+        new_data = pd.read_csv(io.StringIO(response.content.decode('utf-8')))
+        current_history = pd.read_csv(history_path)
+
+        new_data.columns = new_data.columns.str.strip()
+        current_history.columns = current_history.columns.str.strip()
+
+        new_data['Date'] = pd.to_datetime(new_data['Date'], dayfirst=True, errors='coerce')
+        current_history['Date'] = pd.to_datetime(current_history['Date'], dayfirst=True, errors='coerce')
+
+
+        new_data['match_id'] = new_data['Date'].astype(str) + new_data['HomeTeam'] + new_data['AwayTeam']
+        current_history['match_id'] = current_history['Date'].astype(str) + current_history['HomeTeam'] + current_history['AwayTeam']
+        
+        # Filter: Keep rows where match_id is NOT in current history
+        existing_ids = set(current_history['match_id'])
+        fresh_matches = new_data[~new_data['match_id'].isin(existing_ids)].copy()
+        
+        # Drop the helper column
+        fresh_matches = fresh_matches.drop(columns=['match_id'])
+
+        if not fresh_matches.empty:
+            print(f"Found {len(fresh_matches)} new matches!")
+
+            fresh_matches.to_csv(history_path, mode='a', header=False, index=False)
+            csv_25_path = os.path.join(BASE_DIR, "25.csv")
+
+            if os.path.exists(csv_25_path):
+                fresh_matches.to_csv(csv_25_path, mode='a', header=False, index=False)
+            
+            df_history = pd.read_csv(history_path)
+
+            if 'Date' in df_history.columns:
+                df_history['DateTime'] = pd.to_datetime(df_history['Date'], dayfirst=True)
+            
+            return {"status": "success", "new_matches": len(fresh_matches)}
+        else:
+            print("💤 No new updates found.")
+            return {"status": "no_updates", "message": "Data is already up to date"}
+    except Exception as e:
+        print(f"Error updating: {e}")
+        return {"status": "error", "message": str(e)}
+    
+
+
+@app.post("/update-data")
+def trigger_update():
+    return update_match_history()
