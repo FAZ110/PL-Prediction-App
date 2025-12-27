@@ -1,5 +1,6 @@
 import axios from "axios"
 import { useState } from "react"
+import "../styles/updateMatches.css"
 
 
 function UpdateMatches(){

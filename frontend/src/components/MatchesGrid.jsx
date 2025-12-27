@@ -31,8 +31,9 @@ function MatchesGrid(){
 
     return(
         <div className="grid">
-            <header>Upcoming Matches: </header>
+            
             <div className="matches">
+                <header>Upcoming Matches: </header>
                 {matches.map((match, idx) => (
                     <Match data={match} key={idx}/>
                 ))}
