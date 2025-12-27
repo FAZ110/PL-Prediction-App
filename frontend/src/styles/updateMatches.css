@@ -1,0 +1,28 @@
+.update-matches{
+    display: flex;
+    flex-direction: column;
+    /* background-color: antiquewhite; */
+    align-items: center;
+    justify-content: center;
+    /* width: 100%; */
+    margin-top: 20px;
+    text-align: center;
+    
+}
+
+.update-btn{
+    color: #fff;
+    background-color: hsl(120, 100%, 30%);
+    border-radius: 8px;
+    padding: 8px 14px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    margin-top: 5px;
+}
+
+.update-matches p{
+    font-weight: 500;
+    font-size: 1.1rem;
+}
+

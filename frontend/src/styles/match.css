@@ -1,0 +1,139 @@
+.match-container{
+    max-width: 820px;
+    margin: 16px auto;
+    padding: 14px;
+    background: #ffffff;
+    border: 1px solid #e6e6e6;
+    box-shadow: 0 6px 18px rgba(30,30,30,0.06);
+    border-radius: 10px;
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+
+.match-container:hover{
+    transform: translateY(-4px);
+    box-shadow: 0 14px 30px rgba(30,30,30,0.08);
+}
+
+.match-desc{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.match {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.team-wrapper{
+    display: flex;
+    align-items: center;
+    /* justify-content: center; */
+    width: 100%;
+}
+
+.team-logo{
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    margin-bottom: 8px;
+    filter: drop-shadow(0px, 2px, 4px rgba(0,0,0,0.5));
+}
+
+.team-name{
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #111827;
+    display: inline-block;
+    min-width: 120px;
+    text-align: center;
+}
+
+.vs{
+    color: #6b7280;
+    font-weight: 600;
+}
+
+.date{
+    font-size: 0.9rem;
+    color: #6b7280;
+    text-align: center;
+}
+
+/* Prediction area */
+.match-pred{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.predict-btn{
+    background: linear-gradient(180deg,#2563eb,#1d4ed8);
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    box-shadow: 0 6px 12px rgba(37,99,235,0.16);
+    transition: transform .08s ease, opacity .08s ease;
+}
+
+.predict-btn:active{ transform: translateY(1px); }
+.predict-btn[disabled]{
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Result card */
+.prediction-result{
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: #f8fafc;
+    border: 1px solid #eef2ff;
+    min-width: 180px;
+    text-align: left;
+}
+
+.winner{
+    margin: 0;
+    font-size: 1rem;
+    color: #0f172a;
+}
+
+.confidence{
+    margin: 0;
+    font-size: 0.9rem;
+    color: #4b5563;
+}
+
+/* Error text */
+.error{
+    margin-top: 10px;
+    color: #b91c1c;
+    font-weight: 600;
+}
+
+/* Responsive: stack on small screens */
+@media (max-width: 640px){
+    .match-desc{
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .match{
+        justify-content: center;
+        width: 100%;
+    }
+    .match-pred{
+        justify-content: space-between;
+        width: 100%;
+    }
+    .team{ min-width: 0; font-size: 1rem; }
+    .prediction-result{ min-width: auto; width: 100%; }
+}

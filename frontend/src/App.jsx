@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import './App.css'
-import MatchesGrid from '../components/MatchesGrid'
-import UpdateMatches from '../components/UpdateMatches'
+import MatchesGrid from './components/MatchesGrid'
+import UpdateMatches from './components/UpdateMatches'
 
 function App() {
   

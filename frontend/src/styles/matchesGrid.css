@@ -1,0 +1,20 @@
+.grid{
+    
+    
+}
+
+.matches{
+    line-height: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 50px;
+    max-width: 1200px;
+    margin-top: 40px;
+}
+
+header{
+    font-size: 1.5rem;
+    font-weight: bolder;
+    text-align: center;
+    margin-top: 70px;
+}
