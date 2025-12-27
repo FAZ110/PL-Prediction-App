@@ -1,6 +1,7 @@
 import { useState } from "react";
 import "../styles/match.css"
 import axios from "axios";
+import { getTeamLogo } from "../utils/teamLogos";
 
 function Match({ data }){
     const { homeTeam, awayTeam, date, matchday } = data || {};
@@ -9,6 +10,14 @@ function Match({ data }){
     const [error, setError] = useState(null);
 
     const formattedDate = date.split('T')[0];
+
+    if (!getTeamLogo(homeTeam).includes("wikipedia")){
+        console.log("MISSING TEAM LOGO FOR: ", homeTeam)
+    }
+
+    if (!getTeamLogo(awayTeam).includes("wikipedia")){
+        console.log("MISSING TEAM LOGO FOR: ", awayTeam)
+    }
     
     const handlePrediction = async () => {
         setLoading(true);
@@ -33,9 +42,16 @@ function Match({ data }){
         <div className="match-container">
             <div className="match-desc">
                 <div className="match">
-                    <span className="team">{homeTeam}</span>
+                    <div className="team-wrapper">
+                        <img src={getTeamLogo(homeTeam)} alt={homeTeam} className="team-logo" />
+                        <span className="team-name">{homeTeam}</span>
+                    </div>
+                    
                     <span className="vs">VS</span>
-                    <span className="team">{awayTeam}</span>
+                    <div className="team-wrapper">
+                        <img src={getTeamLogo(awayTeam)} alt={awayTeam} className="team-logo" />
+                        <span className="team-name">{awayTeam}</span>
+                    </div>
                     <p className="date">{formattedDate}</p>
 
                 </div>
