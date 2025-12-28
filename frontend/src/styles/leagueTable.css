@@ -1,0 +1,60 @@
+.league-table-container{
+    
+    padding: 20px;
+    border: 1px solid #444;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    color: #fff;
+    background-color: #2a2a2a;
+    margin-top: 130px;
+}
+
+.league-table{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.league-table th{
+    text-align: left;
+    pad: 10px 5px;
+    color: #888;
+    border-bottom: 1px solid #444;
+}
+
+.league-table td{
+    padding: 8px 5px;
+    border-bottom: 1px solid #333;
+}
+
+
+
+.team-cell{
+    display: flex;
+    align-items: center;
+    gap: 10;
+}
+
+
+.table-logo{
+    height: 24px;
+    width: 24px;
+    object-fit: contain;
+}
+
+.points{
+    font-weight: bold;
+    color: #00ff88;
+}
+
+.ucl-spot{
+    /* background-color: #0030f2; */
+    border-left: 2px solid #4164ec;
+    padding-left: 5px;
+}
+
+.rel-spot{
+    /* background-color: #e62250; */
+    border-left: 2px solid #ff4444;
+    padding-left: 5px;
+}

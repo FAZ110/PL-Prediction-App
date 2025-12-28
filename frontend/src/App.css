@@ -14,3 +14,35 @@
   box-sizing: border-box;
   font-family: 'Roboto', sans-serif;
  }
+
+ /* .app-title{
+  text-align: center;
+ } */
+
+.main-layout{
+  display: flex;
+  justify-content: space-around;
+  gap: 20px;
+  
+  flex-wrap: wrap;
+}
+
+.matches-grid-wrapper{
+  min-width: 300px;
+
+}
+
+.league-table-wrapper{
+  min-width: 300px;
+  
+}
+
+
+@media screen and (max-width: 1400px){
+  .main-layout{
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  
+}
