@@ -19,6 +19,13 @@
   text-align: center;
  } */
 
+ .tools{
+  display: flex;
+  justify-content: space-around;
+  margin: 5px;
+  align-items: center;
+ }
+
 .main-layout{
   display: flex;
   justify-content: space-around;
@@ -45,4 +52,10 @@
     align-items: center;
   }
   
+}
+
+@media screen and (max-width: 1000px) {
+  .tools{
+    flex-direction: column;
+  }
 }

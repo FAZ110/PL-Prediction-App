@@ -3,6 +3,7 @@ import './App.css'
 import MatchesGrid from './components/MatchesGrid'
 import UpdateMatches from './components/UpdateMatches'
 import LeagueTable from './components/LeagueTable'
+import Info from './components/Info'
 
 function App() {
   
@@ -11,7 +12,11 @@ function App() {
     <div className="container">
        {/* <h1 className="app-title">⚽ Premier League AI Predictor</h1> */}
 
-       <UpdateMatches/>
+        <div className="tools">
+          <UpdateMatches/>
+          <Info/>
+        </div>
+       
        
        <div className="main-layout">
            
