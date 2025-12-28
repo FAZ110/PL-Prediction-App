@@ -128,6 +128,38 @@ def predict_match(match: MatchPredictionRequest):
 
 
 
+# --- LEAGUE TABLE ---
+
+@app.get("/standings")
+def get_standings():
+    headers = {"X-Auth-Token": API_KEY}
+
+    url = f"{BASE_URL}/competitions/PL/standings"
+
+    response = requests.get(url, headers=headers)
+
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail="Failed to fetch standings!")
+    
+    data = response.json()
+    standings = []
+
+    table = data['standings'][0]['table']
+
+    for team in table:
+        standings.append({
+            "position": team['position'],
+            "name": team['team']['shortName'],
+            "played": team['playedGames'],
+            "won": team['won'],
+            "draw": team['draw'],
+            "lost": team['lost'],
+            "points": team['points'],
+            "goalDifference": team['goalDifference']
+        })
+
+    return standings
 # --- AUTOMATIC DATA UPDATED ---
 
 def update_match_history():
