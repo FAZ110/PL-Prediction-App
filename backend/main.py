@@ -6,15 +6,20 @@ import joblib
 import pandas as pd
 import os
 import io
+from dotenv import load_dotenv
 
 from prediction_engine import predict_match_optimized
 
-
+load_dotenv()
 
 app = FastAPI()
 
-API_KEY = "27ab5b367f9443b188def13938ce9ef1"
+
+API_KEY = os.getenv("API_KEY")
 BASE_URL = "https://api.football-data.org/v4"
+
+if not API_KEY:
+    print("WARNING: No API Key found! Check your .env file.")
 
 app.add_middleware(
     CORSMiddleware,
