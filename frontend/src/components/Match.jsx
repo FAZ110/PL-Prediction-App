@@ -11,13 +11,6 @@ function Match({ data }){
 
     const formattedDate = date.split('T')[0];
 
-    if (!getTeamLogo(homeTeam).includes("wikipedia")){
-        console.log("MISSING TEAM LOGO FOR: ", homeTeam)
-    }
-
-    if (!getTeamLogo(awayTeam).includes("wikipedia")){
-        console.log("MISSING TEAM LOGO FOR: ", awayTeam)
-    }
     
     const handlePrediction = async () => {
         setLoading(true);

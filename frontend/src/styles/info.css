@@ -1,0 +1,33 @@
+.info-container{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #2a2a2a;
+    color: #fff;
+    padding: 20px;
+    max-width: 600px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    margin-top: 80px;
+}
+
+
+.confidence-list{
+    list-style: none;
+    padding: 5px;
+}
+
+
+.confidence-level{
+    color: #259c45;
+}
+
+.chance{
+    color: #a6b322;
+}
+
+.warning{
+    color: red;
+    font-weight: 800;
+    font-size: 1.1rem;
+}
