@@ -21,9 +21,17 @@ BASE_URL = "https://api.football-data.org/v4"
 if not API_KEY:
     print("WARNING: No API Key found! Check your .env file.")
 
+
+origins = [
+    "http://localhost:5173",                      # For local development
+    "http://127.0.0.1:5173",                      # Alternative local address
+    "https://pl-prediction-app-mu.vercel.app",    # Your production Vercel URL
+    "https://pl-prediction-app-mu.vercel.app/"    # Sometimes Vercel adds a slash, safe to add both
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
