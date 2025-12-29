@@ -34,4 +34,5 @@ frontend/node_modules/
 frontend/build/
 .DS_Store
 
-*.txt
+# *.txt
+note.txt
