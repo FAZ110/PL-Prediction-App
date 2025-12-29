@@ -11,17 +11,17 @@ env/
 
 # --- Datasets ---
 # I commented this out so you CAN track your CSVs
-*.csv 
+# *.csv 
 
 
 
 # --- Model Artifacts ---
 # Keep these ignored if your models are >100MB (GitHub limit)
 # If you want to track them, comment these out too.
-*.pkl
-*.joblib
-football_model.pkl
-football_model_final.pkl
+# *.pkl
+# *.joblib
+# football_model.pkl
+# football_model_final.pkl
 
 
 # --- OS / Editor ---
