@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import axios from "axios"
 import "../styles/matchesGrid.css"
 import Match from "./Match";
+import API_URL from "../config";
 
 function MatchesGrid(){
     const [matches, setMatches] = useState([]);
@@ -13,7 +14,7 @@ function MatchesGrid(){
 
         const fetchMatches = async () => {
             try {
-                const response = await axios.get("http://127.0.0.1:8000/upcoming");
+                const response = await axios.get(`${API_URL}/upcoming`);
                 setMatches(response.data)
             } catch (error) {
                 console.error("Error fetching matcher: ", error)

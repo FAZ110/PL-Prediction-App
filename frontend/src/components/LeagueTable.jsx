@@ -2,6 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { getTeamLogo } from "../utils/teamLogos";
 import '../styles/leagueTable.css'
+import API_URL from "../config";
 
 function LeagueTable(){
     const [standings, setStandings] = useState([]);
@@ -14,7 +15,7 @@ function LeagueTable(){
             setError(null)
             setloading(true)
             try {
-                const response = await axios.get("http://127.0.0.1:8000/standings")
+                const response = await axios.get(`${API_URL}/standings`)
                 setStandings(response.data)
                 
             } catch (error) {

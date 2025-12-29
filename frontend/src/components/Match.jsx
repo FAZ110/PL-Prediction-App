@@ -2,6 +2,7 @@ import { useState } from "react";
 import "../styles/match.css"
 import axios from "axios";
 import { getTeamLogo } from "../utils/teamLogos";
+import API_URL from "../config";
 
 function Match({ data }){
     const { homeTeam, awayTeam, date, matchday } = data || {};
@@ -17,7 +18,7 @@ function Match({ data }){
         setError(null);
 
         try {
-            const response = await axios.post("http://127.0.0.1:8000/predict", {
+            const response = await axios.post(`${API_URL}/predict`, {
                 home_team: homeTeam,
                 away_team: awayTeam
             })

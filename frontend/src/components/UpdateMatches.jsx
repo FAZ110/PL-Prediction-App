@@ -1,6 +1,7 @@
 import axios from "axios"
 import { useEffect, useState } from "react"
 import "../styles/updateMatches.css"
+import API_URL from "../config"
 
 
 function UpdateMatches(){
@@ -12,7 +13,7 @@ function UpdateMatches(){
 
     const fetchLastMatch = async () => {
         try {
-            const response = await axios.get('http://127.0.0.1:8000/last-updated');
+            const response = await axios.get(`${API_URL}/last-updated`);
             setLastMatch(response.data.date)
             
         } catch (error) {
@@ -32,7 +33,7 @@ function UpdateMatches(){
         setUpdated(false)
 
         try {
-            await axios.post('http://127.0.0.1:8000/update-data')
+            await axios.post(`${API_URL}/update-data`)
             setUpdated(true)
             await fetchLastMatch();
         } catch (error) {
