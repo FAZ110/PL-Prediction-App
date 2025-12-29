@@ -335,6 +335,16 @@ def predict_match(match: MatchPredictionRequest):
 
 
 
+@app.get("/last-updated")
+def get_latest_update():
+
+    if df_history is None or df_history.empty:
+        return {"date": "No Data"}
+    
+    last_match = df_history.sort_values('DateTime').iloc[-1]
+    last_date = str(last_match['DateTime']).split(' ')[0]
+    return {"date": last_date}
+
 # --- LEAGUE TABLE ---
 
 @app.get("/standings")
