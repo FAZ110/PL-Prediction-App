@@ -9,7 +9,7 @@ function UpdateMatches(){
     const [error, setError] = useState(null)
     const [updated, setUpdated] = useState(false)
 
-    const [lastMatch, setLastMatch] = useState("Ckecking...")
+    const [lastMatch, setLastMatch] = useState("Checking...")
 
     const fetchLastMatch = async () => {
         try {

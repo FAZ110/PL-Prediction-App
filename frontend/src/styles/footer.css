@@ -1,0 +1,17 @@
+footer{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    background-color: #2a2a2a;
+    color: #fff;
+    margin-top: 100px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.thank-note{
+    font-weight: 600;
+    font-size: 1.2rem;
+    padding: 10px;
+}
