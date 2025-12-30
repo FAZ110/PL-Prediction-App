@@ -4,6 +4,7 @@ import MatchesGrid from './components/MatchesGrid'
 import UpdateMatches from './components/UpdateMatches'
 import LeagueTable from './components/LeagueTable'
 import Info from './components/Info'
+import Footer from './components/Footer'
 
 function App() {
   
@@ -29,6 +30,8 @@ function App() {
            </div>
 
        </div>
+       <Footer/>
+
     </div>
     
   )
