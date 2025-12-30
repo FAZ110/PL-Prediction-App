@@ -15,9 +15,21 @@
   font-family: 'Roboto', sans-serif;
  }
 
+/* Layout for sticky footer */
+html, body, #root {
+  height: 100%;
+}
+
+.container{
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
  /* .app-title{
   text-align: center;
  } */
+
 
  .tools{
   display: flex;
@@ -30,8 +42,8 @@
   display: flex;
   justify-content: space-around;
   gap: 20px;
-  
   flex-wrap: wrap;
+  flex: 1; /* allow main content to grow and push footer to bottom */
 }
 
 .matches-grid-wrapper{
