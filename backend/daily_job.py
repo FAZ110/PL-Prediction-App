@@ -15,7 +15,7 @@ def run_daily_update():
     print("🤖 Starting Daily Update Job...")
     
     # 1. Download New Data
-    url = "https://www.football-data.co.uk/mmz4281/2425/E0.csv"
+    url = "https://www.football-data.co.uk/mmz4281/2526/E0.csv"
     print(f"⬇️ Downloading latest data from {url}...")
     
     try:
