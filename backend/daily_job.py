@@ -2,14 +2,19 @@ import pandas as pd
 import requests
 import io
 import os
+from dotenv import load_dotenv # <--- ADD THIS
+load_dotenv()
 from database import engine
 from utils import calculate_elo_ratings, calculate_team_form # Import from your new utils file
 
-# Mapping CSV -> DB
+
 COLUMN_MAPPING = {
     'Date': 'date', 'Season': 'season', 'HomeTeam': 'home_team', 'AwayTeam': 'away_team',
-    'FTHG': 'fthg', 'FTAG': 'ftag', 'FTR': 'ftr'
+    'FTHG': 'fthg', 'FTAG': 'ftag', 'FTR': 'ftr',
+    'HST': 'hst', 'AST': 'ast', 'HC': 'hc', 'AC': 'ac' # <--- ADD THIS
 }
+
+# ... (rest of the script stays the same)
 
 def run_daily_update():
     print("🤖 Starting Daily Update Job...")
@@ -49,7 +54,7 @@ def run_daily_update():
 
     # 4. Process New Data
     new_matches = new_data_raw.loc[new_indices].copy()
-    if 'Season' not in new_matches.columns: new_matches['Season'] = "2024-25"
+    if 'Season' not in new_matches.columns: new_matches['Season'] = "2025-26"
     new_matches = new_matches.rename(columns=COLUMN_MAPPING)
     
     # Filter columns to match DB

@@ -34,6 +34,7 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -69,11 +70,41 @@ except FileNotFoundError:
 
 def load_data():
     print("Loading data from Database...")
-    query = "SELECT * FROM matches"
-    df = pd.read_sql(query, engine)
-
-    df['date'] = pd.to_datetime(df['date'])
-    return df
+    try:
+        # Read from Database
+        query = "SELECT * FROM matches"
+        df = pd.read_sql(query, engine)
+        
+        # ⚠️ CRITICAL: Rename columns back to what the ML Model expects
+        # The DB gives 'home_team', but your model likely wants 'HomeTeam'
+        rename_map = {
+            'home_team': 'HomeTeam',
+            'away_team': 'AwayTeam',
+            'season': 'Season',
+            'date': 'Date',
+            'fthg': 'FTHG',
+            'ftag': 'FTAG',
+            'ftr': 'FTR',
+            'home_elo': 'HomeElo',
+            'away_elo': 'AwayElo',
+            'elo_difference': 'EloDifference',
+            'points_difference': 'PointsDifference',
+            'home_team_code': 'HomeTeamCode',
+            'away_team_code': 'AwayTeamCode',
+            'hst': 'HST', 'ast': 'AST', 'hc': 'HC', 'ac': 'AC'
+            # Note: snake_case stats (e.g., home_wins_last_5) are usually fine 
+            # as they were likely snake_case in your training CSV too.
+        }
+        df = df.rename(columns=rename_map)
+        
+        # Fix Date format
+        df['Date'] = pd.to_datetime(df['Date'])
+        
+        print(f"✅ Loaded {len(df)} matches from Database.")
+        return df
+    except Exception as e:
+        print(f"❌ Database Load Error: {e}")
+        return pd.DataFrame()
 
 df_history = load_data()
 
@@ -130,6 +161,8 @@ def get_upcoming_matches():
 
 @app.post("/predict")
 def predict_match(match: MatchPredictionRequest):
+    global df_history
+    if df_history.empty: df_history = load_data()
 
     result = predict_match_optimized(
         model,
@@ -165,9 +198,8 @@ def get_latest_update():
     if df_history is None or df_history.empty:
         return {"date": "No Data"}
     
-    last_match = df_history.sort_values('DateTime').iloc[-1]
-    last_date = str(last_match['DateTime']).split(' ')[0]
-    return {"date": last_date}
+    last_date = df_history['Date'].max()
+    return {"date": str(last_date.date())}
 
 # --- LEAGUE TABLE ---
 

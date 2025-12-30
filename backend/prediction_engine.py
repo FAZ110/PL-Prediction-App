@@ -41,10 +41,10 @@ def predict_match_optimized(model, home_team, away_team, df_history, le, feature
     # --- CHANGED: Now grabbing LAST 10 matches ---
     N_MATCHES = 10 
     
-    games_h = df_history[(df_history['HomeTeam'] == home) | (df_history['AwayTeam'] == home)].sort_values('DateTime')
+    games_h = df_history[(df_history['HomeTeam'] == home) | (df_history['AwayTeam'] == home)].sort_values('Date')
     last_n_h = games_h.tail(N_MATCHES)
     
-    games_a = df_history[(df_history['HomeTeam'] == away) | (df_history['AwayTeam'] == away)].sort_values('DateTime')
+    games_a = df_history[(df_history['HomeTeam'] == away) | (df_history['AwayTeam'] == away)].sort_values('Date')
     last_n_a = games_a.tail(N_MATCHES)
     
     if last_n_h.empty or last_n_a.empty:

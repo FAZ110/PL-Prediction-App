@@ -16,6 +16,11 @@ class Match(Base):
     ftag = Column(Integer)
     ftr = Column(String)
 
+    hst = Column(Integer)  # Home Shots on Target
+    ast = Column(Integer)  # Away Shots on Target
+    hc = Column(Integer)   # Home Corners
+    ac = Column(Integer)   # Away Corners
+
     # ML Features (Matches your CSV columns)
     home_elo = Column(Float)
     away_elo = Column(Float)

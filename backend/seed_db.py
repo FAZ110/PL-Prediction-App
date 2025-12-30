@@ -7,6 +7,11 @@ from models import Match
 column_mapping = {
     'Date': 'date', 'Season': 'season', 'HomeTeam': 'home_team', 'AwayTeam': 'away_team',
     'FTHG': 'fthg', 'FTAG': 'ftag', 'FTR': 'ftr',
+    
+    # --- NEW: Map Raw Stats ---
+    'HST': 'hst', 'AST': 'ast', 'HC': 'hc', 'AC': 'ac',
+
+    # ... (Keep the rest of the mapping exactly as it was) ...
     'HomeElo': 'home_elo', 'AwayElo': 'away_elo', 
     'EloDifference': 'elo_difference', 'PointsDifference': 'points_difference',
     'HomeTeamCode': 'home_team_code', 'AwayTeamCode': 'away_team_code',
