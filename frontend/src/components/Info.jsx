@@ -3,21 +3,23 @@ import "../styles/info.css"
 function Info(){
     
     const LEVELS = [
-        { threshold: 0.40, successRate: 61.3 },
-        { threshold: 0.45, successRate: 71.0 },
-        { threshold: 0.48, successRate: 75.9 },
-        { threshold: 0.50, successRate: 78.8 }
+        { threshold: 0.40, successRate: 60.7, cssClass: "risk" },
+        { threshold: 0.45, successRate: 64.8, cssClass: "bronze" },
+        { threshold: 0.50, successRate: 72.0, cssClass: "silver" },
+        { threshold: 0.55, successRate: 82.2, cssClass: "gold" }
     ];
 
     return (
         <div className="info-container">
-            <h3>Confidence Explanation</h3>
+            <h3>Model Accuracy</h3>
+            <p className="subtitle">Base on the last 1,920 matches:</p>
 
             <ul className="confidence-list">
-                {LEVELS.map(({ threshold, successRate }) => (
+                {LEVELS.map(({ threshold, successRate, cssClass }) => (
                     <li key={threshold} className="list-elem">
                         <p className="info">
-                            If confidence is above <span className="confidence-level">{Math.round(threshold * 100)}%</span>, the chance of a successful prediction is <span className="chance">{successRate}%</span>.
+                            Confidence <span className={`confidence-level ${cssClass}`}> &gt; {Math.round(threshold * 100)}%</span>
+                            {' '} ➡ Accuracy: <span className={`chance ${cssClass}`}>{successRate}%</span>
                         </p>
                     </li>
                 ))}
