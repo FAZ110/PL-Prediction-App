@@ -1,33 +1,74 @@
-.info-container{
+.info-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    background-color: #2a2a2a;
+    background-color: #1a1a1a; 
     color: #fff;
-    padding: 20px;
+    padding: 25px;
     max-width: 600px;
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    margin-top: 80px;
+    margin-top: 40px; 
+    border: 1px solid #333;
 }
 
+h3 {
+    margin-bottom: 5px;
+    color: #f0f0f0;
+}
 
-.confidence-list{
+.subtitle {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+    color: #888;
+}
+
+.confidence-list {
     list-style: none;
-    padding: 5px;
+    padding: 0;
+    width: 100%;
+}
+
+.list-elem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Spreads badge and text */
+    background-color: #252525;
+    margin-bottom: 10px;
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: 1px solid #333;
 }
 
 
-.confidence-level{
-    color: #259c45;
+.info {
+    margin: 0;
+    font-size: 0.95rem;
+    margin-left: 15px;
 }
 
-.chance{
-    color: #a6b322;
-}
+/* --- Tier Colors --- */
+.confidence-level { font-weight: bold; }
+.chance { font-weight: bold; }
 
-.warning{
-    color: red;
+/* Gold Tier */
+.gold { color: #FFD700; text-shadow: 0 0 5px rgba(255, 215, 0, 0.2); }
+
+/* Silver Tier */
+.silver { color: #C0C0C0; }
+
+/* Bronze Tier */
+.bronze { color: #CD7F32; }
+
+/* Risk Tier */
+.risk { color: #ff6b6b; }
+
+.warning {
+    margin-top: 20px;
+    color: #ff4d4d;
     font-weight: 800;
-    font-size: 1.1rem;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }

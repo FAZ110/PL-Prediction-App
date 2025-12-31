@@ -23,6 +23,7 @@ env/
 # football_model.pkl
 # football_model_final.pkl
 
+.test_db_py
 
 # --- OS / Editor ---
 .DS_Store
