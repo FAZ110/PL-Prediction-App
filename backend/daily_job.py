@@ -58,8 +58,8 @@ def run_daily_update():
     new_matches = new_matches.rename(columns=COLUMN_MAPPING)
     
     # Filter columns to match DB
-    common_cols = [c for c in new_matches.columns if c in current_history.columns]
-    new_matches = new_matches[common_cols]
+    # common_cols = [c for c in new_matches.columns if c in current_history.columns]
+    # new_matches = new_matches[common_cols]
 
     # 5. Merge & Recalculate Everything
     combined_df = pd.concat([current_history, new_matches], ignore_index=True)
