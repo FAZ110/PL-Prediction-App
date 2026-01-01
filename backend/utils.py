@@ -1,43 +1,55 @@
 import pandas as pd
 
-def calculate_elo_ratings(df, k_factor=20):
-    # 1. Update column names to snake_case
-    all_teams = set(df['home_team'].unique()) | set(df['away_team'].unique())
-
-    elo_ratings = {team: 1500 for team in all_teams}
+def calculate_elo_ratings(df):
+    # Initialize ratings
+    elo_ratings = {team: 1500 for team in pd.concat([df['home_team'], df['away_team']]).unique()}
     
-    # Initialize columns
-    df['home_elo'] = 0.0
-    df['away_elo'] = 0.0
-
+    # We will store the new rows here
+    new_rows = []
+    
+    # Iterate through the DataFrame
     for index, row in df.iterrows():
-        home_team = row['home_team']
-        away_team = row['away_team']
-
-        result = row['ftr'] # 'H', 'D', 'A'
-
-        current_home_elo = elo_ratings[home_team]
-        current_away_elo = elo_ratings[away_team]
-
-        df.at[index, 'home_elo'] = current_home_elo
-        df.at[index, 'away_elo'] = current_away_elo
-
-        expected_home_win_prob = 1 / (1 + 10**((current_away_elo - current_home_elo) / 400))
-
-        if result == 'H':
-            actual_score_home = 1
-        elif result == 'D':
-            actual_score_home = 0.5
+        home = row['home_team']
+        away = row['away_team']
+        
+        # Get current Elo
+        home_elo = elo_ratings.get(home, 1500)
+        away_elo = elo_ratings.get(away, 1500)
+        
+        # Calculate Expected Result
+        P_home = 1 / (1 + 10 ** ((away_elo - home_elo) / 400))
+        P_away = 1 - P_home
+        
+        # Actual Result (1=Win, 0.5=Draw, 0=Loss)
+        if row['ftr'] == 'H':
+            actual_home = 1
+            actual_away = 0
+        elif row['ftr'] == 'A':
+            actual_home = 0
+            actual_away = 1
         else:
-            actual_score_home = 0
-
-        new_home_elo = current_home_elo + k_factor * (actual_score_home - expected_home_win_prob)
-        new_away_elo = current_away_elo + k_factor * ((1-actual_score_home) - (1 - expected_home_win_prob))
-
-        elo_ratings[home_team] = new_home_elo
-        elo_ratings[away_team] = new_away_elo
-    
-    return df
+            actual_home = 0.5
+            actual_away = 0.5
+            
+        # Update Elo (K-factor = 20)
+        K = 20
+        new_home_elo = home_elo + K * (actual_home - P_home)
+        new_away_elo = away_elo + K * (actual_away - P_away)
+        
+        # Save new ratings for next match
+        elo_ratings[home] = new_home_elo
+        elo_ratings[away] = new_away_elo
+        
+       
+        row_data = row.to_dict() 
+        
+        # 2. Add/Update the Elo columns
+        row_data['home_elo'] = home_elo 
+        row_data['away_elo'] = away_elo
+        
+        new_rows.append(row_data)
+        
+    return pd.DataFrame(new_rows)
 
 
 def calculate_team_form(df, n_matches=10):
