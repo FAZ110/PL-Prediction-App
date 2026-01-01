@@ -8,6 +8,7 @@ import os
 import io
 from dotenv import load_dotenv
 from database import engine
+from sqlalchemy import text
 
 from prediction_engine import predict_match_optimized
 from utils import calculate_elo_ratings, calculate_team_form
@@ -192,12 +193,23 @@ def predict_match(match: MatchPredictionRequest):
 
 
 
+# In backend/main.py
+
 @app.get("/last-updated")
 def get_latest_update():
-
-    if df_history is None or df_history.empty:
-        return {"date": "No Data"}
+    # 1. Ask the Real Database directly (bypassing cached memory)
+    query = "SELECT MAX(date) as last_date FROM matches"
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(text(query)).fetchone()
+            if result and result[0]:
+                return {"date": str(result[0])}
+    except Exception as e:
+        print(f"Error fetching date: {e}")
     
+    # Fallback to memory if DB fails
+    if df_history.empty:
+        return {"date": "No Data"}
     last_date = df_history['Date'].max()
     return {"date": str(last_date.date())}
 
