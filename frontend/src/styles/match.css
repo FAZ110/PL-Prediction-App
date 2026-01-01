@@ -1,20 +1,57 @@
-.match-container{
+.match-container {
     max-width: 820px;
     margin: 16px auto;
     padding: 14px;
     background: #ffffff;
     border: 1px solid #e6e6e6;
-    box-shadow: 0 6px 18px rgba(30,30,30,0.06);
+    box-shadow: 0 6px 18px rgba(30, 30, 30, 0.06);
     border-radius: 10px;
-    transition: transform .12s ease, box-shadow .12s ease;
+    /* Smooth transition for the glow effect */
+    transition: transform 0.2s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
-.match-container:hover{
+.match-container:hover {
     transform: translateY(-4px);
-    box-shadow: 0 14px 30px rgba(30,30,30,0.08);
+    box-shadow: 0 14px 30px rgba(30, 30, 30, 0.08);
 }
 
-.match-desc{
+
+
+/* Gold Tier (>55%) */
+.match-container.tier-gold {
+    border-color: #FFD700;
+    /* Inset shadow creates the inner glow */
+    box-shadow: inset 0 0 15px rgba(255, 215, 0, 0.25), 0 6px 18px rgba(255, 215, 0, 0.15);
+}
+
+/* Silver Tier (>50%) */
+.match-container.tier-silver {
+    border-color: #C0C0C0;
+    box-shadow: inset 0 0 15px rgba(192, 192, 192, 0.3), 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+/* Bronze Tier (>45%) */
+.match-container.tier-bronze {
+    border-color: #CD7F32;
+    box-shadow: inset 0 0 15px rgba(205, 127, 50, 0.25), 0 6px 18px rgba(205, 127, 50, 0.1);
+}
+
+/* Risk Tier (<45%) */
+.match-container.tier-risk {
+    border-color: #ff6b6b;
+    box-shadow: inset 0 0 15px rgba(255, 107, 107, 0.2), 0 6px 18px rgba(255, 107, 107, 0.1);
+}
+
+/* --- Text Coloring for Consistency --- */
+.conf-value { font-weight: 800; margin-left: 5px; }
+.conf-value.tier-gold { color: #d4af37; } /* Darker gold for text readability */
+.conf-value.tier-silver { color: #7f8c8d; }
+.conf-value.tier-bronze { color: #a0522d; }
+.conf-value.tier-risk { color: #e74c3c; }
+
+
+/* --- EXISTING STYLES (Kept mostly same) --- */
+.match-desc {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -27,22 +64,21 @@
     gap: 12px;
 }
 
-.team-wrapper{
+.team-wrapper {
     display: flex;
     align-items: center;
-    /* justify-content: center; */
     width: 100%;
 }
 
-.team-logo{
+.team-logo {
     width: 50px;
     height: 50px;
     object-fit: contain;
     margin-bottom: 8px;
-    filter: drop-shadow(0px, 2px, 4px rgba(0,0,0,0.5));
+    filter: drop-shadow(0px, 2px, 4px rgba(0, 0, 0, 0.5));
 }
 
-.team-name{
+.team-name {
     font-weight: 700;
     font-size: 1.05rem;
     color: #111827;
@@ -51,47 +87,47 @@
     text-align: center;
 }
 
-.vs{
+.vs {
     color: #6b7280;
     font-weight: 600;
 }
 
-.date{
+.date {
     font-size: 0.9rem;
     color: #6b7280;
     text-align: center;
-    /* white-space: nonwrap; */
     min-width: 100px;
 }
 
-/* Prediction area */
-.match-pred{
+.match-pred {
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
-.predict-btn{
-    background: linear-gradient(180deg,#2563eb,#1d4ed8);
+.predict-btn {
+    background: linear-gradient(180deg, #2563eb, #1d4ed8);
     color: white;
     border: none;
     padding: 8px 14px;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
-    box-shadow: 0 6px 12px rgba(37,99,235,0.16);
+    box-shadow: 0 6px 12px rgba(37, 99, 235, 0.16);
     transition: transform .08s ease, opacity .08s ease;
 }
 
-.predict-btn:active{ transform: translateY(1px); }
-.predict-btn[disabled]{
+.predict-btn:active {
+    transform: translateY(1px);
+}
+
+.predict-btn[disabled] {
     opacity: 0.6;
     cursor: not-allowed;
     box-shadow: none;
 }
 
-/* Result card */
-.prediction-result{
+.prediction-result {
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -103,39 +139,52 @@
     text-align: left;
 }
 
-.winner{
+.winner {
     margin: 0;
     font-size: 1rem;
     color: #0f172a;
 }
 
-.confidence{
+.winner-name {
+    font-weight: bold; 
+    color: #000;
+}
+
+.confidence {
     margin: 0;
     font-size: 0.9rem;
     color: #4b5563;
 }
 
-/* Error text */
-.error{
+.error {
     margin-top: 10px;
     color: #b91c1c;
     font-weight: 600;
 }
 
-/* Responsive: stack on small screens */
-@media (max-width: 640px){
-    .match-desc{
+@media (max-width: 640px) {
+    .match-desc {
         flex-direction: column;
         align-items: stretch;
     }
-    .match{
+
+    .match {
         justify-content: center;
         width: 100%;
     }
-    .match-pred{
+
+    .match-pred {
         justify-content: space-between;
         width: 100%;
     }
-    .team{ min-width: 0; font-size: 1rem; }
-    .prediction-result{ min-width: auto; width: 100%; }
+
+    .team-name {
+        min-width: 0;
+        font-size: 1rem;
+    }
+
+    .prediction-result {
+        min-width: auto;
+        width: 100%;
+    }
 }
