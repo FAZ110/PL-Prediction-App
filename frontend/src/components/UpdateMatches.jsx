@@ -11,7 +11,7 @@ function UpdateMatches(){
 
     const fetchLastMatch = async () => {
         try {
-            const response = await axios.get(`${API_URL}/last-updated`);
+            const response = await axios.get(`${API_URL}/last-updated?t=${Date.now()}`);
             setLastMatch(response.data.date)
             
         } catch (error) {

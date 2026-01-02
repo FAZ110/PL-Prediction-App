@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import requests
@@ -196,22 +196,36 @@ def predict_match(match: MatchPredictionRequest):
 # In backend/main.py
 
 @app.get("/last-updated")
-def get_latest_update():
-    # 1. Ask the Real Database directly (bypassing cached memory)
-    query = "SELECT MAX(date) as last_date FROM matches"
+def get_latest_update(response: Response):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    
+    # 1. Try Real DB
     try:
+        query = "SELECT MAX(date) as last_date FROM matches"
         with engine.connect() as conn:
             result = conn.execute(text(query)).fetchone()
+            clean_date = str(result[0]).split(" ")[0]
             if result and result[0]:
-                return {"date": str(result[0])}
+                return {
+                    "date": clean_date, 
+                    "source": "LIVE_DATABASE"  # <--- If you see this, DB is connected
+                }
     except Exception as e:
-        print(f"Error fetching date: {e}")
-    
-    # Fallback to memory if DB fails
+        print(f"DB Error: {e}")
+        # Capture the error to send to frontend
+        error_message = str(e)
+
+    # 2. Fallback (This is likely where you are landing)
     if df_history.empty:
         return {"date": "No Data"}
+    
     last_date = df_history['Date'].max()
-    return {"date": str(last_date.date())}
+    
+    return {
+        "date": str(last_date.date()), 
+        "source": "FALLBACK_MEMORY",   # <--- You will likely see this
+        "error_details": error_message # <--- This will tell you WHY the DB failed
+    }
 
 # --- LEAGUE TABLE ---
 
