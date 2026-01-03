@@ -1,11 +1,19 @@
 import pandas as pd
 import requests
 import io
+import sys
 import os
-from dotenv import load_dotenv # <--- ADD THIS
+
+# 1. FIX PATHS: Add the 'backend' folder to the system path
+# This allows us to see the 'app' folder as a package
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from dotenv import load_dotenv
 load_dotenv()
-from database import engine
-from utils import calculate_elo_ratings, calculate_team_form # Import from your new utils file
+
+# 2. FIX IMPORTS: Use 'app.database', not 'backend.app.database'
+from app.database import engine
+from app.utils import calculate_elo_ratings, calculate_team_form
 
 
 COLUMN_MAPPING = {

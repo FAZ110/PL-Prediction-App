@@ -1,8 +1,8 @@
 import pandas as pd
 import joblib
 import os
-from database import engine
-from prediction_engine import predict_match_optimized
+from backend.app.database import engine
+from backend.app.prediction_engine import predict_match_optimized
 
 # 1. Load Model & Tools
 print("⏳ Loading model and database...")
