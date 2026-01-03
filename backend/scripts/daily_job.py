@@ -11,6 +11,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from dotenv import load_dotenv
 load_dotenv()
 
+from scripts.retrain import retrain_model
+
 # 2. FIX IMPORTS: Use 'app.database', not 'backend.app.database'
 from app.database import engine
 from app.utils import calculate_elo_ratings, calculate_team_form
@@ -89,6 +91,12 @@ def run_daily_update():
     
     combined_df.to_sql("matches", engine, if_exists='replace', index=False)
     print("✅ Daily Update Complete!")
+
+    print("🔄 Triggering Auto-Retraining...")
+    try:
+        retrain_model()
+    except Exception as e:
+        print(f"⚠️ Retraining failed: {e}")
 
 if __name__ == "__main__":
     run_daily_update()

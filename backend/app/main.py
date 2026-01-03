@@ -8,6 +8,7 @@ import os
 import io
 from dotenv import load_dotenv
 from sqlalchemy import text
+import pickle
 
 from .database import engine
 from .prediction_engine import predict_match_optimized
@@ -40,24 +41,44 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def load_dynamic_model():
+    print("📥 Checking Database for updated model...")
+    try:
+        query = text("SELECT model_binary, encoder_binary FROM model_store ORDER BY id DESC LIMIT 1")
+        with engine.connect() as conn:
+            result = conn.execute(query).fetchone()
+            
+        if result:
+            model_blob, encoder_blob = result
+            dyn_model = pickle.loads(model_blob)
+            dyn_le = pickle.loads(encoder_blob)
+            print("✅ Loaded latest model from Database!")
+            return dyn_model, dyn_le
+    except Exception as e:
+        print(f"⚠️ DB Model Load failed (using fallback): {e}")
+    return None, None
+
+model, le = load_dynamic_model()
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 model_path = os.path.join(BASE_DIR, "..", "ml_artifacts", "football_model_final.pkl")
 
 
+if model is None:
 
-try:
-    model = joblib.load(model_path)
-    print("Model loaded")
-except FileNotFoundError:
-    print("WARNING: Model file not found. Prediction endpoint will fail.")
+    try:
+        model = joblib.load(model_path)
+        print("Static model loaded")
+    except FileNotFoundError:
+        print("WARNING: Model file not found. Prediction endpoint will fail.")
 
 
-encoder_path = os.path.join(BASE_DIR, "..", "ml_artifacts", 'team_encoders.pkl')
-try:
-    le = joblib.load(encoder_path)
-    print("Encoders loaded")
-except FileNotFoundError:
-    print("Encoders not Found!!")
+    encoder_path = os.path.join(BASE_DIR, "..", "ml_artifacts", 'team_encoders.pkl')
+    try:
+        le = joblib.load(encoder_path)
+        print("Static encoders loaded")
+    except FileNotFoundError:
+        print("Encoders not Found!!")
 
 
 # history_path = os.path.join(BASE_DIR, 'match_history.csv')
@@ -162,6 +183,9 @@ def get_upcoming_matches():
 
 @app.post("/predict")
 def predict_match(match: MatchPredictionRequest):
+    
+    if model is None or le is None:
+        return {"error": "Model is not loaded. Please run the training script or upload .pkl files."}
     global df_history
     if df_history.empty: df_history = load_data()
 
