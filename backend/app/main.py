@@ -7,11 +7,11 @@ import pandas as pd
 import os
 import io
 from dotenv import load_dotenv
-from database import engine
 from sqlalchemy import text
 
-from prediction_engine import predict_match_optimized
-from utils import calculate_elo_ratings, calculate_team_form
+from .database import engine
+from .prediction_engine import predict_match_optimized
+from .utils import calculate_elo_ratings, calculate_team_form
 
 load_dotenv()
 
@@ -41,7 +41,7 @@ app.add_middleware(
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-model_path = os.path.join(BASE_DIR, "football_model_final.pkl")
+model_path = os.path.join(BASE_DIR, "..", "ml_artifacts", "football_model_final.pkl")
 
 
 
@@ -52,7 +52,7 @@ except FileNotFoundError:
     print("WARNING: Model file not found. Prediction endpoint will fail.")
 
 
-encoder_path = os.path.join(BASE_DIR, 'team_encoders.pkl')
+encoder_path = os.path.join(BASE_DIR, "..", "ml_artifacts", 'team_encoders.pkl')
 try:
     le = joblib.load(encoder_path)
     print("Encoders loaded")

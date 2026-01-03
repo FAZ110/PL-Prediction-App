@@ -1,5 +1,5 @@
 import pandas as pd
-from database import engine
+from backend.app.database import engine
 
 def check_columns():
     try:
