@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from sqlalchemy import text
 from datetime import datetime
+import requests
 
 # --- PATH SETUP ---
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -11,6 +12,8 @@ from app.database import engine
 
 # --- SETTINGS ---
 CSV_URL = "https://www.football-data.co.uk/mmz4281/2526/E0.csv"
+
+DEPLOY_HOOK_URL = "https://api.render.com/deploy/srv-d5991715pdvs73a8hd80?key=D7LRfQUb7bc"
 
 def calculate_rolling_stats(df):
     """Calculates rolling averages for Shots, Corners, and Form."""
@@ -195,6 +198,19 @@ def run_daily_job():
     # We import here to avoid circular imports
     from scripts.retrain import retrain_model
     retrain_model()
+
+    print("🚀 Triggering API Auto-Deployment...")
+    if "api.render.com" in DEPLOY_HOOK_URL:
+        try:
+            res = requests.post(DEPLOY_HOOK_URL)
+            if res.status_code == 200:
+                print("✅ API Deployment Triggered Successfully!")
+            else:
+                print(f"⚠️ Deployment Failed: {res.text}")
+        except Exception as e:
+            print(f"❌ Deploy Hook Error: {e}")
+    else:
+        print("⚠️ No Deploy Hook URL set. Skipping auto-deploy.")
 
 if __name__ == "__main__":
     run_daily_job()
