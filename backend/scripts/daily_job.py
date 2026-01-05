@@ -1,102 +1,200 @@
-import pandas as pd
-import requests
-import io
-import sys
 import os
+import sys
+import pandas as pd
+import numpy as np
+from sqlalchemy import text
+from datetime import datetime
 
-# 1. FIX PATHS: Add the 'backend' folder to the system path
-# This allows us to see the 'app' folder as a package
+# --- PATH SETUP ---
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from dotenv import load_dotenv
-load_dotenv()
-
-from scripts.retrain import retrain_model
-
-# 2. FIX IMPORTS: Use 'app.database', not 'backend.app.database'
 from app.database import engine
-from app.utils import calculate_elo_ratings, calculate_team_form
 
+# --- SETTINGS ---
+CSV_URL = "https://www.football-data.co.uk/mmz4281/2526/E0.csv"
 
-COLUMN_MAPPING = {
-    'Date': 'date', 'Season': 'season', 'HomeTeam': 'home_team', 'AwayTeam': 'away_team',
-    'FTHG': 'fthg', 'FTAG': 'ftag', 'FTR': 'ftr',
-    'HST': 'hst', 'AST': 'ast', 'HC': 'hc', 'AC': 'ac' # <--- ADD THIS
-}
+def calculate_rolling_stats(df):
+    """Calculates rolling averages for Shots, Corners, and Form."""
+    df = df.sort_values('date')
+    
+    # Initialize columns with 0
+    cols_to_init = [
+        'home_wins_last_5', 'home_draws_last_5', 'home_losses_last_5',
+        'away_wins_last_5', 'away_draws_last_5', 'away_losses_last_5',
+        'home_goals_scored_avg', 'home_goals_conceded_avg',
+        'away_goals_scored_avg', 'away_goals_conceded_avg',
+        'home_points_last_5', 'away_points_last_5',
+        'home_sot_avg', 'home_corners_avg',
+        'away_sot_avg', 'away_corners_avg'
+    ]
+    
+    for col in cols_to_init:
+        df[col] = 0.0
 
-# ... (rest of the script stays the same)
+    # We need a dictionary to track team history
+    team_stats = {}
 
-def run_daily_update():
+    for index, row in df.iterrows():
+        home = row['home_team']
+        away = row['away_team']
+        
+        # Initialize team if new
+        if home not in team_stats: team_stats[home] = []
+        if away not in team_stats: team_stats[away] = []
+        
+        # --- 1. GET HISTORY FOR HOME TEAM ---
+        history = team_stats[home]
+        if len(history) > 0:
+            last_5 = history[-5:]
+            df.at[index, 'home_wins_last_5'] = sum(1 for m in last_5 if m['result'] == 'W')
+            df.at[index, 'home_draws_last_5'] = sum(1 for m in last_5 if m['result'] == 'D')
+            df.at[index, 'home_losses_last_5'] = sum(1 for m in last_5 if m['result'] == 'L')
+            df.at[index, 'home_points_last_5'] = sum(m['points'] for m in last_5)
+            
+            # Advanced Stats (SOT, Corners, Goals)
+            df.at[index, 'home_goals_scored_avg'] = np.mean([m['goals_for'] for m in last_5])
+            df.at[index, 'home_goals_conceded_avg'] = np.mean([m['goals_against'] for m in last_5])
+            df.at[index, 'home_sot_avg'] = np.mean([m['sot'] for m in last_5])
+            df.at[index, 'home_corners_avg'] = np.mean([m['corners'] for m in last_5])
+        
+        # --- 2. GET HISTORY FOR AWAY TEAM ---
+        history = team_stats[away]
+        if len(history) > 0:
+            last_5 = history[-5:]
+            df.at[index, 'away_wins_last_5'] = sum(1 for m in last_5 if m['result'] == 'W')
+            df.at[index, 'away_draws_last_5'] = sum(1 for m in last_5 if m['result'] == 'D')
+            df.at[index, 'away_losses_last_5'] = sum(1 for m in last_5 if m['result'] == 'L')
+            df.at[index, 'away_points_last_5'] = sum(m['points'] for m in last_5)
+            
+            # Advanced Stats
+            df.at[index, 'away_goals_scored_avg'] = np.mean([m['goals_for'] for m in last_5])
+            df.at[index, 'away_goals_conceded_avg'] = np.mean([m['goals_against'] for m in last_5])
+            df.at[index, 'away_sot_avg'] = np.mean([m['sot'] for m in last_5])
+            df.at[index, 'away_corners_avg'] = np.mean([m['corners'] for m in last_5])
+
+        # --- 3. UPDATE HISTORY AFTER MATCH ---
+        # Skip updating if match hasn't happened yet (Result is None)
+        if pd.isna(row['fthg']) or pd.isna(row['ftr']):
+            continue
+
+        # Home Perspective
+        h_res = 'W' if row['ftr'] == 'H' else ('D' if row['ftr'] == 'D' else 'L')
+        h_pts = 3 if h_res == 'W' else (1 if h_res == 'D' else 0)
+        
+        team_stats[home].append({
+            'result': h_res, 'points': h_pts,
+            'goals_for': row['fthg'], 'goals_against': row['ftag'],
+            'sot': row['hst'], 'corners': row['hc']
+        })
+
+        # Away Perspective
+        a_res = 'W' if row['ftr'] == 'A' else ('D' if row['ftr'] == 'D' else 'L')
+        a_pts = 3 if a_res == 'W' else (1 if a_res == 'D' else 0)
+        
+        team_stats[away].append({
+            'result': a_res, 'points': a_pts,
+            'goals_for': row['ftag'], 'goals_against': row['fthg'],
+            'sot': row['ast'], 'corners': row['ac']
+        })
+        
+    return df
+
+def update_elo(df):
+    """Calculates Elo ratings for the whole dataset."""
+    df = df.sort_values('date')
+    elo_dict = {team: 1500 for team in pd.concat([df['home_team'], df['away_team']]).unique()}
+    
+    df['home_elo'] = 0.0
+    df['away_elo'] = 0.0
+    df['elo_difference'] = 0.0
+    
+    k_factor = 20
+
+    for index, row in df.iterrows():
+        home = row['home_team']
+        away = row['away_team']
+        
+        h_elo = elo_dict[home]
+        a_elo = elo_dict[away]
+        
+        df.at[index, 'home_elo'] = h_elo
+        df.at[index, 'away_elo'] = a_elo
+        df.at[index, 'elo_difference'] = h_elo - a_elo
+
+        # If match not played, skip update
+        if pd.isna(row['ftr']): continue
+
+        # Calculate Expected Result
+        prob_h = 1 / (1 + 10 ** ((a_elo - h_elo) / 400))
+        
+        # Actual Result (1=Win, 0.5=Draw, 0=Loss)
+        if row['ftr'] == 'H': actual = 1
+        elif row['ftr'] == 'D': actual = 0.5
+        else: actual = 0
+        
+        # New Ratings
+        new_h_elo = h_elo + k_factor * (actual - prob_h)
+        new_a_elo = a_elo + k_factor * ((1 - actual) - (1 - prob_h))
+        
+        elo_dict[home] = new_h_elo
+        elo_dict[away] = new_a_elo
+        
+    return df
+
+def run_daily_job():
     print("🤖 Starting Daily Update Job...")
     
     # 1. Download New Data
-    url = "https://www.football-data.co.uk/mmz4281/2526/E0.csv"
-    print(f"⬇️ Downloading latest data from {url}...")
-    
+    print(f"⬇️ Downloading latest data from {CSV_URL}...")
     try:
-        response = requests.get(url)
-        response.raise_for_status()
-        new_data_raw = pd.read_csv(io.StringIO(response.content.decode('utf-8')))
+        new_data = pd.read_csv(CSV_URL)
+        # Rename Cols
+        new_data = new_data.rename(columns={
+            'Date': 'date', 'HomeTeam': 'home_team', 'AwayTeam': 'away_team',
+            'FTHG': 'fthg', 'FTAG': 'ftag', 'FTR': 'ftr',
+            'HST': 'hst', 'AST': 'ast', 'HC': 'hc', 'AC': 'ac'
+        })
+        # Standardize Date
+        new_data['date'] = pd.to_datetime(new_data['date'], dayfirst=True)
+        new_data['season'] = '2025-26'
     except Exception as e:
-        print(f"❌ Download failed: {e}")
+        print(f"❌ Failed to download: {e}")
         return
 
-    # 2. Load Existing DB Data
+    # 2. Load Old Data from DB
     print("📥 Loading current database...")
-    current_history = pd.read_sql("SELECT * FROM matches", engine)
-    
-    # 3. Identify New Matches
-    # Create unique IDs
-    new_data_raw['Date_Obj'] = pd.to_datetime(new_data_raw['Date'], dayfirst=True, errors='coerce')
-    new_data_raw['match_id'] = new_data_raw['Date_Obj'].astype(str) + new_data_raw['HomeTeam']
-    
-    current_history['temp_date'] = pd.to_datetime(current_history['date']).dt.date.astype(str)
-    current_history['match_id'] = current_history['temp_date'] + current_history['home_team']
-
-    existing_ids = set(current_history['match_id'])
-    new_indices = new_data_raw[~new_data_raw['match_id'].isin(existing_ids)].index
-
-    if len(new_indices) == 0:
-        print("💤 No new matches found today.")
-        return
-
-    print(f"✅ Found {len(new_indices)} new matches! Updating...")
-
-    # 4. Process New Data
-    new_matches = new_data_raw.loc[new_indices].copy()
-    if 'Season' not in new_matches.columns: new_matches['Season'] = "2025-26"
-    new_matches = new_matches.rename(columns=COLUMN_MAPPING)
-    
-    # Filter columns to match DB
-    # common_cols = [c for c in new_matches.columns if c in current_history.columns]
-    # new_matches = new_matches[common_cols]
-
-    # 5. Merge & Recalculate Everything
-    combined_df = pd.concat([current_history, new_matches], ignore_index=True)
-    combined_df['date'] = pd.to_datetime(combined_df['date'])
-    combined_df = combined_df.sort_values('date').reset_index(drop=True)
-
-    print("⚙️ Recalculating Elo & Form...")
-    combined_df = calculate_elo_ratings(combined_df)
-    combined_df = calculate_team_form(combined_df)
-
-    # Calculate Diffs
-    combined_df['elo_difference'] = combined_df['home_elo'] - combined_df['away_elo']
-    combined_df['points_difference'] = combined_df['home_points_last_5'] - combined_df['away_points_last_5']
-
-    # 6. Save to DB
-    print("💾 Overwriting Database...")
-    cols_to_drop = ['match_id', 'temp_date', 'Date_Obj']
-    combined_df = combined_df.drop(columns=[c for c in cols_to_drop if c in combined_df.columns])
-    
-    combined_df.to_sql("matches", engine, if_exists='replace', index=False)
-    print("✅ Daily Update Complete!")
-
-    print("🔄 Triggering Auto-Retraining...")
     try:
-        retrain_model()
+        old_data = pd.read_sql("SELECT * FROM matches", engine)
+        old_data['date'] = pd.to_datetime(old_data['date'])
     except Exception as e:
-        print(f"⚠️ Retraining failed: {e}")
+        print(f"⚠️ DB Read Error (Might be empty): {e}")
+        old_data = pd.DataFrame()
+
+    # 3. Merge & Deduplicate
+    print("🔄 Merging datasets...")
+    # We combine them to ensure we have the FULL history for Elo/Form calculations
+    full_df = pd.concat([old_data, new_data]).drop_duplicates(subset=['date', 'home_team', 'away_team'], keep='last')
+    
+    # 4. Recalculate EVERYTHING (Elo, Form, Corners, Shots)
+    print("⚙️ Recalculating Full History (Elo, Form, Corners, Shots)...")
+    full_df = calculate_rolling_stats(full_df)
+    full_df = update_elo(full_df)
+    
+    # Calculate Points Diff
+    full_df['points_difference'] = full_df['home_points_last_5'] - full_df['away_points_last_5']
+
+    print("✅ Feature engineering complete!")
+
+    # 5. Save Back to DB
+    print("💾 Overwriting Database with updated stats...")
+    full_df.to_sql('matches', engine, if_exists='replace', index=False)
+    
+    print("✅ Daily Update Complete!")
+    
+    # 6. Trigger Retraining
+    print("🔄 Triggering Auto-Retraining...")
+    # We import here to avoid circular imports
+    from scripts.retrain import retrain_model
+    retrain_model()
 
 if __name__ == "__main__":
-    run_daily_update()
+    run_daily_job()
