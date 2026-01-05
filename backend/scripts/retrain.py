@@ -18,7 +18,7 @@ def retrain_model():
     
     # 1. Load Data from DB
     try:
-        df = pd.read_sql("SELECT * FROM matches", engine)
+        df = pd.read_sql("SELECT * FROM matches WHERE date > 2019-01-08", engine)
         print(f"📊 Loaded {len(df)} matches for training.")
     except Exception as e:
         print(f"❌ Failed to load data: {e}")
