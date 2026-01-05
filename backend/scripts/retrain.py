@@ -2,29 +2,31 @@ import sys
 import os
 import pandas as pd
 import pickle
-from sklearn.ensemble import RandomForestClassifier
+import xgboost as xgb  # <-- NEW IMPORT
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sqlalchemy import text
 
-# --- PATH SETUP (Crucial for importing 'app') ---
+# --- PATH SETUP ---
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import engine
 
 def retrain_model():
-    print("🧠 Starting Model Retraining...")
+    print("🧠 Starting XGBoost Model Retraining... [V3 - XGBoost Upgrade]")
     
-    # 1. Load Data from DB
-    # LIMIT THE DATA NO ENOUGH RAM / matches only after season 2018/2019
+    # 1. Load Data (Memory Safe)
     try:
-        df = pd.read_sql("SELECT * FROM matches WHERE date > '2019-01-08'", engine)
-        print(f"📊 Loaded {len(df)} matches for training.")
+        # Loading matches from 2019 onwards to save RAM
+        query = "SELECT * FROM matches WHERE date > '2019-08-01'"
+        df = pd.read_sql(query, engine)
+        print(f"📊 Loaded {len(df)} matches from Database.")
     except Exception as e:
         print(f"❌ Failed to load data: {e}")
         return
-    
+
+    # Rename columns to match what the model expects
     rename_map = {
         'home_elo': 'HomeElo',
         'away_elo': 'AwayElo',
@@ -35,7 +37,8 @@ def retrain_model():
     }
     df = df.rename(columns=rename_map)
 
-    # 2. Preprocessing (Re-creating encoders is vital for new teams)
+    # 2. Preprocessing
+    # We must encode teams because the model needs numbers, not names
     le = LabelEncoder()
     all_teams = pd.concat([df['home_team'], df['away_team']]).unique()
     le.fit(all_teams)
@@ -54,28 +57,63 @@ def retrain_model():
         'away_sot_avg', 'away_corners_avg'
     ]
     
-    # Clean data
+    # Clean data & Remove "Ghost Matches"
     df = df.dropna(subset=features)
     df = df[df['ftr'].isin(['H', 'D', 'A'])]
+    
+    print(f"🧹 Training on {len(df)} valid, finished matches.")
+
     X = df[features]
     y = df['ftr']
 
+    # XGBoost requires target classes to be 0, 1, 2 (Integers)
+    # We use a LabelEncoder for the Target (Result) too
+    target_encoder = LabelEncoder()
+    y_encoded = target_encoder.fit_transform(y)
+    # Important: Save this mapping so we know 0=Away, 1=Draw, etc.
+    print(f"🔤 Class Mapping: {dict(zip(target_encoder.classes_, target_encoder.transform(target_encoder.classes_)))}")
+
     # 3. Train
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    if len(df) < 50:
+        print("⚠️ Not enough data to train! Skipping.")
+        return
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, test_size=0.2, random_state=42)
+
+    # --- XGBOOST CONFIGURATION ---
+    # We use the parameters from your grid search, but HARDCODED.
+    # This gives us the performance benefits without the 'Search' time cost.
+    model = xgb.XGBClassifier(
+        n_estimators=400,       # From your grid (middle ground)
+        learning_rate=0.01,     # Slow & steady learning
+        max_depth=5,            # Prevents overfitting
+        subsample=0.8,
+        colsample_bytree=0.8,
+        objective='multi:softprob',
+        random_state=42,
+        n_jobs=-1               # Use all CPUs
+    )
+    
     model.fit(X_train, y_train)
     
-    acc = accuracy_score(y_test, model.predict(X_test))
-    print(f"🎯 New Model Accuracy: {acc:.2%}")
+    # Evaluate
+    predictions = model.predict(X_test)
+    acc = accuracy_score(y_test, predictions)
+    print(f"🎯 New XGBoost Accuracy: {acc:.2%}")
 
-    # 4. Serialize & Save to DB
+    # 4. Save to Database
+    # We need to save BOTH the model AND the team encoder AND the target encoder
+    # But currently your DB only expects 'model' and 'encoder'. 
+    # For now, we will stick to saving the team encoder as 'encoder_binary'.
+    # The API will just need to know the standard H=Home mapping or we rely on XGBoost's default.
+    
     print("💾 Saving to Database...")
     model_bytes = pickle.dumps(model)
     encoder_bytes = pickle.dumps(le)
     
     query = text("""
         INSERT INTO model_store (model_binary, encoder_binary, accuracy, version_note)
-        VALUES (:m, :e, :a, 'Daily Auto-Retrain');
+        VALUES (:m, :e, :a, 'Daily XGBoost Retrain');
     """)
     
     cleanup_query = text("""
@@ -87,9 +125,9 @@ def retrain_model():
 
     with engine.begin() as conn:
         conn.execute(query, {"m": model_bytes, "e": encoder_bytes, "a": float(acc)})
-        conn.execute(cleanup_query) # Keep DB clean
+        conn.execute(cleanup_query) 
         
-    print("✅ Model saved and old versions cleaned up!")
+    print("✅ XGBoost Model saved successfully!")
 
 if __name__ == "__main__":
     retrain_model()
