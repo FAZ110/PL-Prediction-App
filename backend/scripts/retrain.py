@@ -23,6 +23,16 @@ def retrain_model():
     except Exception as e:
         print(f"❌ Failed to load data: {e}")
         return
+    
+    rename_map = {
+        'home_elo': 'HomeElo',
+        'away_elo': 'AwayElo',
+        'elo_difference': 'EloDifference',
+        'points_difference': 'PointsDifference',
+        'home_team_code': 'HomeTeamCode',
+        'away_team_code': 'AwayTeamCode'
+    }
+    df = df.rename(columns=rename_map)
 
     # 2. Preprocessing (Re-creating encoders is vital for new teams)
     le = LabelEncoder()
