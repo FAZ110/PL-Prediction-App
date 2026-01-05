@@ -19,7 +19,7 @@ def retrain_model():
     # 1. Load Data (Memory Safe)
     try:
         # Loading matches from 2019 onwards to save RAM
-        query = "SELECT * FROM matches WHERE date > '2019-08-01'"
+        query = "SELECT * FROM matches WHERE date > '2015-08-01'"
         df = pd.read_sql(query, engine)
         print(f"📊 Loaded {len(df)} matches from Database.")
     except Exception as e:
