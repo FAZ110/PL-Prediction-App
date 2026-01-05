@@ -19,7 +19,7 @@ def retrain_model():
     # 1. Load Data from DB
     # LIMIT THE DATA NO ENOUGH RAM / matches only after season 2018/2019
     try:
-        df = pd.read_sql("SELECT * FROM matches WHERE date > 2019-01-08", engine)
+        df = pd.read_sql("SELECT * FROM matches WHERE date > '2019-01-08'", engine)
         print(f"📊 Loaded {len(df)} matches for training.")
     except Exception as e:
         print(f"❌ Failed to load data: {e}")
