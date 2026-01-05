@@ -56,6 +56,7 @@ def retrain_model():
     
     # Clean data
     df = df.dropna(subset=features)
+    df = df[df['ftr'].isin(['H', 'D', 'A'])]
     X = df[features]
     y = df['ftr']
 
