@@ -176,6 +176,23 @@ def run_daily_job():
     print("🔄 Merging datasets...")
     # We combine them to ensure we have the FULL history for Elo/Form calculations
     full_df = pd.concat([old_data, new_data]).drop_duplicates(subset=['date', 'home_team', 'away_team'], keep='last')
+
+    if not old_data.empty:
+        old_finished_count = len(old_data[old_data['ftr'].notna()])
+    else:
+        old_finished_count = 0
+        
+    # Count finished matches in New Merged Data
+    new_finished_count = len(full_df[full_df['ftr'].notna()])
+    
+    print(f"📊 Old Finished Matches: {old_finished_count} | New Finished Matches: {new_finished_count}")
+
+    if new_finished_count == old_finished_count:
+        print("💤 No new match results found. Database is up to date.")
+        print("🛑 Skipping Recalculation, Retraining, and Deploy.")
+        return
+    else:
+        print(f"✅ Found {new_finished_count - old_finished_count} new finished matches! Proceeding with update...")
     
     # 4. Recalculate EVERYTHING (Elo, Form, Corners, Shots)
     print("⚙️ Recalculating Full History (Elo, Form, Corners, Shots)...")
