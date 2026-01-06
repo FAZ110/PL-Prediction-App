@@ -1,9 +1,9 @@
 import sys
 import os
 import pandas as pd
-import pickle
 import xgboost as xgb
 import numpy as np
+from sklearn.preprocessing import LabelEncoder
 from sqlalchemy import text
 
 # --- PATH SETUP ---
@@ -13,54 +13,18 @@ from app.database import engine
 def check_model_accuracy():
     print("⏳ Connecting to Database...")
     
-    # 1. Fetch the Latest Model & Encoder from DB
-    try:
-        with engine.connect() as conn:
-            # Get the newest model row
-            result = conn.execute(text("SELECT model_binary, encoder_binary FROM model_store ORDER BY id DESC LIMIT 1")).fetchone()
-            
-            if not result:
-                print("❌ No model found in 'model_store' table!")
-                return
-
-            print("📥 Loading Model from Database blob...")
-            model = pickle.loads(result[0])
-            team_encoder = pickle.loads(result[1])
-            print("✅ Model & Team Encoder loaded successfully!")
-            
-    except Exception as e:
-        print(f"❌ Error loading model: {e}")
-        return
-
-    # 2. Load Match Data
-    print("📊 Fetching match history...")
+    # 1. Load Match Data
     query = "SELECT * FROM matches WHERE date > '2015-08-01' ORDER BY date ASC"
     df = pd.read_sql(query, engine)
     
-    # Rename columns to match training schema
+    # Rename columns to match what the model expects
     rename_map = {
-        'home_elo': 'HomeElo',
-        'away_elo': 'AwayElo',
-        'elo_difference': 'EloDifference',
-        'points_difference': 'PointsDifference',
-        'home_team_code': 'HomeTeamCode',
-        'away_team_code': 'AwayTeamCode'
+        'home_elo': 'HomeElo', 'away_elo': 'AwayElo', 
+        'elo_difference': 'EloDifference', 'points_difference': 'PointsDifference'
     }
     df = df.rename(columns=rename_map)
-    
-    # 3. Preprocessing (Must match retrain.py exactly)
-    # Encode Teams
-    # Note: We must handle teams that might be in the test set but weren't in the training set
-    # (Though with backfill, this is rare). We use a safe transform approach.
-    
-    known_teams = set(team_encoder.classes_)
-    
-    # Filter out matches with unknown teams (safety check)
-    df = df[df['home_team'].isin(known_teams) & df['away_team'].isin(known_teams)]
-    
-    df['HomeTeamCode'] = team_encoder.transform(df['home_team'])
-    df['AwayTeamCode'] = team_encoder.transform(df['away_team'])
-    
+
+    # 2. Define Features
     features = [
         'home_wins_last_5', 'home_draws_last_5', 'home_losses_last_5',
         'away_wins_last_5', 'away_draws_last_5', 'away_losses_last_5',
@@ -71,29 +35,62 @@ def check_model_accuracy():
         'home_sot_avg', 'home_corners_avg',
         'away_sot_avg', 'away_corners_avg'
     ]
-    
-    # Drop rows with missing features/results
-    df = df.dropna(subset=features + ['ftr'])
-    df = df[df['ftr'].isin(['H', 'D', 'A'])]
 
-    # 4. Define Test Set (Last 20% of data)
-    split_index = int(len(df) * 0.80)
-    test_df = df.iloc[split_index:].copy()
+    # --- FIX START: ROBUST NAN HANDLING ---
+    # We create a list of columns to check, EXCLUDING the ones we haven't created yet
+    cols_to_check = [f for f in features if f not in ['HomeTeamCode', 'AwayTeamCode']]
+    cols_to_check.append('ftr') # Also check for valid result
     
-    print(f"🧪 Testing on the last {len(test_df)} matches (Chronological Split)...")
+    # Drop rows where stats are missing
+    df = df.dropna(subset=cols_to_check)
+    df = df[df['ftr'].isin(['H', 'D', 'A'])]
+    # --- FIX END ---
+
+    # 3. Create Encode Teams (Fresh for this test)
+    le = LabelEncoder()
+    # Fit on all teams so we don't crash on unseen teams
+    all_teams = pd.concat([df['home_team'], df['away_team']]).unique()
+    le.fit(all_teams)
+    
+    df['HomeTeamCode'] = le.transform(df['home_team'])
+    df['AwayTeamCode'] = le.transform(df['away_team'])
+
+    # 4. STRICT Time Split (The "Reality Check")
+    # We train on the first 80% (Past) and test on the last 20% (Future)
+    split_index = int(len(df) * 0.80)
+    
+    train_df = df.iloc[:split_index]
+    test_df = df.iloc[split_index:]  # The model has NEVER seen this data
+
+    print(f"📊 Training on {len(train_df)} matches (Past)...")
+    print(f"🧪 Testing on {len(test_df)} matches (Future)...")
+
+    X_train = train_df[features]
+    y_train = train_df['ftr'].map({'A': 0, 'D': 1, 'H': 2})
 
     X_test = test_df[features]
-    y_true = test_df['ftr']
+    y_test = test_df['ftr'].map({'A': 0, 'D': 1, 'H': 2})
 
-    # 5. Predict
-    # XGBoost returns probabilities: [[Prob_A, Prob_D, Prob_H], ...]
-    # Mapping based on your logs: 0=Away, 1=Draw, 2=Home
+    # 5. Train a Temporary Model
+    model = xgb.XGBClassifier(
+        n_estimators=100, 
+        learning_rate=0.05, 
+        max_depth=3, 
+        objective='multi:softprob',
+        random_state=42
+    )
+    model.fit(X_train, y_train)
+
+    # 6. Predict
     probs = model.predict_proba(X_test)
     
     results = []
     class_map = {0: 'A', 1: 'D', 2: 'H'}
 
-    for i, (index, row) in enumerate(test_df.iterrows()):
+    # Reset index for safe iteration
+    test_df = test_df.reset_index(drop=True)
+
+    for i, row in test_df.iterrows():
         row_probs = probs[i]
         predicted_index = np.argmax(row_probs)
         confidence = row_probs[predicted_index]
@@ -103,18 +100,16 @@ def check_model_accuracy():
         is_correct = (predicted_result == actual_result)
         
         results.append({
-            "Home": row['home_team'],
-            "Away": row['away_team'],
             "Actual": actual_result,
             "Predicted": predicted_result,
             "Confidence": confidence,
             "Correct": is_correct
         })
 
-    # 6. Generate Report
+    # 7. Generate Honest Report
     results_df = pd.DataFrame(results)
     
-    print("\n=== 🎯 Accuracy Report (XGBoost / Production DB) ===")
+    print("\n=== ⚖️ HONEST Accuracy Report (No Cheating) ===")
     print(f"Total Matches Tested: {len(results_df)}")
     print(f"Overall Accuracy: {results_df['Correct'].mean():.2%}")
     print("-" * 50)
