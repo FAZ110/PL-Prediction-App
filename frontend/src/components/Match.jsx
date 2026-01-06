@@ -9,10 +9,10 @@ function Match({ data }) {
     const [prediction, setPrediction] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [showStats, setShowStats] = useState(false);
 
     const formattedDate = date ? date.split('T')[0] : "Unknown Date";
 
-    // --- 1. DETERMINE TIER CLASS ---
     const getTierClass = (confidence) => {
         if (!confidence) return "";
         if (confidence >= 0.70) return "tier-gold";
@@ -24,13 +24,14 @@ function Match({ data }) {
     const handlePrediction = async () => {
         setLoading(true);
         setError(null);
-
         try {
             const response = await axios.post(`${API_URL}/predict`, {
                 home_team: homeTeam,
                 away_team: awayTeam
             });
             setPrediction(response.data);
+            // Auto-open stats on successful prediction for better UX
+            setShowStats(true); 
         } catch (err) {
             console.error("Prediction failed: ", err);
             setError("Could not predict the match");
@@ -39,11 +40,9 @@ function Match({ data }) {
         }
     };
 
-    // Calculate the class dynamically
     const tierClass = prediction ? getTierClass(prediction.confidence) : "";
 
     return (
-        // --- 2. APPLY DYNAMIC CLASS HERE ---
         <div className={`match-container ${tierClass}`}>
             <div className="match-desc">
                 <div className="match">
@@ -61,34 +60,111 @@ function Match({ data }) {
                 </div>
 
                 <div className="match-pred">
-                    <button
-                        className="predict-btn"
-                        onClick={handlePrediction}
-                        disabled={loading || prediction} // Disable if already predicted
-                    >
-                        {loading ? "Thinking..." : "Predict"}
-                    </button>
+                    
 
-                    {prediction && (
+                    {prediction ? (
                         <div className="prediction-result">
                             <h3 className="winner">
                                 Winner: <span className="winner-name">{prediction.prediction}</span>
                             </h3>
                             <p className="confidence">
                                 Confidence: 
-                                {/* Color the percentage text too */}
                                 <span className={`conf-value ${tierClass}`}>
-                                    {(prediction.confidence * 100).toFixed(2)}%
+                                    {(prediction.confidence * 100).toFixed(1)}%
                                 </span>
                             </p>
                         </div>
-                    )}
+                    ) : 
+                    <button
+                        className="predict-btn"
+                        onClick={handlePrediction}
+                        disabled={loading || prediction} 
+                    >
+                        {loading ? "Thinking..." : "Predict"}
+                    </button>
+                    }
                 </div>
             </div>
+
+            {/* Only show the Toggle Button if we have a prediction */}
+            {prediction && (
+                <>
+                    <button 
+                        className="show-statsBtn" 
+                        onClick={() => setShowStats(!showStats)}
+                    >
+                        {showStats ? "Hide Stats ▲" : "Compare Stats ▼"}
+                    </button>
+
+                    {showStats && (
+                        <div className="match-stats">
+                            <div className="stats-header">
+                                <span>{homeTeam}</span>
+                                <span className="stats-title">LAST 10 GAMES</span>
+                                <span>{awayTeam}</span>
+                            </div>
+
+                            <StatRow 
+                                label="Elo Rating" 
+                                home={prediction.home_stats.elo} 
+                                away={prediction.away_stats.elo} 
+                                decimals={0}
+                            />
+                            <StatRow 
+                                label="Goals Scored/Avg" 
+                                home={prediction.home_stats.gs_avg} 
+                                away={prediction.away_stats.gs_avg} 
+                            />
+                            <StatRow 
+                                label="Goals Conceded/Avg" 
+                                home={prediction.home_stats.gc_avg} 
+                                away={prediction.away_stats.gc_avg} 
+                                lowerIsBetter={true} // Special logic for defense
+                            />
+                            <StatRow 
+                                label="Form (Wins)" 
+                                home={prediction.home_stats.wins} 
+                                away={prediction.away_stats.wins} 
+                                decimals={0}
+                            />
+                            <StatRow 
+                                label="Points Earned" 
+                                home={prediction.home_stats.pts} 
+                                away={prediction.away_stats.pts} 
+                                decimals={0}
+                            />
+                        </div>
+                    )}
+                </>
+            )}
 
             {error && <p className="error">{error}</p>}
         </div>
     );
 }
+
+// --- Helper Component for Clean Rows ---
+const StatRow = ({ label, home, away, lowerIsBetter = false, decimals = 1 }) => {
+    const hVal = parseFloat(home);
+    const aVal = parseFloat(away);
+
+    // Determine who wins this stat
+    let homeWin = hVal > aVal;
+    if (lowerIsBetter) homeWin = hVal < aVal; // For goals conceded, lower is better
+    
+    const isTie = hVal === aVal;
+
+    return (
+        <div className="stat-row">
+            <span className={`stat-val ${homeWin && !isTie ? "better" : ""}`}>
+                {hVal.toFixed(decimals)}
+            </span>
+            <span className="stat-label">{label}</span>
+            <span className={`stat-val ${!homeWin && !isTie ? "better" : ""}`}>
+                {aVal.toFixed(decimals)}
+            </span>
+        </div>
+    );
+};
 
 export default Match;

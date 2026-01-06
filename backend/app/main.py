@@ -207,10 +207,8 @@ def predict_match(match: MatchPredictionRequest):
             "away_team": match.away_team,
             "prediction": winner, 
             "confidence": float(confidence),
-            "details":{
-                "home_elo": h_stats.get('elo'),
-                "away_elo": a_stats.get('elo')
-            }
+            "home_stats": h_stats,
+            "away_stats": a_stats
         }
     else:
         return {"error": f"Could not predict. Maybe team name was wrong {match.home_team} or {match.away_team}?"}
