@@ -2,9 +2,12 @@
     max-width: 820px;
     margin: 16px auto;
     padding: 14px;
-    background: #ffffff;
+    /* background: #ffffff;
     border: 1px solid #e6e6e6;
-    box-shadow: 0 6px 18px rgba(30, 30, 30, 0.06);
+    box-shadow: 0 6px 18px rgba(30, 30, 30, 0.06); */
+    background-color: #1e293b; /* Slate 800 - Lighter than body */
+    border: 1px solid #334155; /* Slate 700 - Subtle border */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
     border-radius: 10px;
     /* Smooth transition for the glow effect */
     transition: transform 0.2s ease, box-shadow 0.3s ease, border-color 0.3s ease;
@@ -21,25 +24,25 @@
 .match-container.tier-gold {
     border-color: #FFD700;
     /* Inset shadow creates the inner glow */
-    box-shadow: inset 0 0 15px rgba(255, 215, 0, 0.25), 0 6px 18px rgba(255, 215, 0, 0.15);
+    box-shadow: inset 0 0 25px rgba(255, 215, 0, 0.25), 0 6px 18px rgba(255, 215, 0, 0.15);
 }
 
 /* Silver Tier (>50%) */
 .match-container.tier-silver {
     border-color: #C0C0C0;
-    box-shadow: inset 0 0 15px rgba(192, 192, 192, 0.3), 0 6px 18px rgba(0, 0, 0, 0.08);
+    box-shadow: inset 0 0 25px rgba(192, 192, 192, 0.3), 0 6px 18px rgba(0, 0, 0, 0.08);
 }
 
 /* Bronze Tier (>45%) */
 .match-container.tier-bronze {
     border-color: #CD7F32;
-    box-shadow: inset 0 0 15px rgba(205, 127, 50, 0.25), 0 6px 18px rgba(205, 127, 50, 0.1);
+    box-shadow: inset 0 0 25px rgba(205, 127, 50, 0.25), 0 6px 18px rgba(205, 127, 50, 0.1);
 }
 
 /* Risk Tier (<45%) */
 .match-container.tier-risk {
     border-color: #ff6b6b;
-    box-shadow: inset 0 0 15px rgba(255, 107, 107, 0.2), 0 6px 18px rgba(255, 107, 107, 0.1);
+    box-shadow: inset 0 0 25px rgba(255, 107, 107, 0.2), 0 6px 18px rgba(255, 107, 107, 0.1);
 }
 
 /* --- Text Coloring for Consistency --- */
@@ -50,12 +53,13 @@
 .conf-value.tier-risk { color: #e74c3c; }
 
 
-/* --- EXISTING STYLES (Kept mostly same) --- */
 .match-desc {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    /* flex-wrap: wrap; */
+    
 }
 
 .match {
@@ -71,25 +75,34 @@
 }
 
 .team-logo {
-    width: 50px;
-    height: 50px;
-    object-fit: contain;
-    margin-bottom: 8px;
-    filter: drop-shadow(0px, 2px, 4px rgba(0, 0, 0, 0.5));
+    width: 65px;         /* Increased from 60px */
+    height: 65px;
+    object-fit: contain; /* Ensures aspect ratio is kept */
+    
+    background-color: #ffffff; 
+    border-radius: 30%;
+    
+    /* 🛠️ THE FIX: Increase padding from 8px to 12px */
+    padding: 8px;       
+    
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    border: 2px solid #334155;
 }
-
 .team-name {
     font-weight: 700;
     font-size: 1.05rem;
-    color: #111827;
+    color: #fff;
     display: inline-block;
     min-width: 120px;
     text-align: center;
 }
 
 .vs {
-    color: #6b7280;
-    font-weight: 600;
+    color: #94a3b8; /* Light Slate Grey */
+    font-weight: 900;
+    font-style: italic;
+    font-size: 1.2rem;
+    margin: 0 15px;
 }
 
 .date {
@@ -103,6 +116,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-wrap: wrap;
 }
 
 .predict-btn {
@@ -137,6 +151,10 @@
     border: 1px solid #eef2ff;
     min-width: 180px;
     text-align: left;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    width: 100%;       
+    max-width: 220px;  
+    animation: popIn 0.3s ease-out;
 }
 
 .winner {
@@ -160,6 +178,95 @@
     margin-top: 10px;
     color: #b91c1c;
     font-weight: 600;
+}
+
+/* ... Keep your existing match container styles ... */
+
+/* --- Stats Toggle Button --- */
+.show-statsBtn {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 0.85rem;
+    cursor: pointer;
+    margin-top: 15px;
+    width: 100%;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: color 0.2s;
+}
+
+.show-statsBtn:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+
+/* --- Stats Panel --- */
+.match-stats {
+    background-color: #222; /* Slightly lighter than card bg */
+    margin-top: 15px;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #333;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.stats-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #666;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #333;
+    padding-bottom: 5px;
+}
+
+.stats-title {
+    color: #444;
+}
+
+/* --- Stat Rows --- */
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #2a2a2a;
+    font-size: 0.9rem;
+}
+
+.stat-row:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    color: #888;
+    font-size: 0.8rem;
+    text-align: center;
+    flex: 1; /* Takes up middle space */
+}
+
+.stat-val {
+    font-weight: bold;
+    color: #ccc;
+    width: 40px; /* Fixed width for alignment */
+    text-align: center;
+}
+
+.better {
+    color: #4ade80; /* Bright Green */
+    text-shadow: 0 0 5px rgba(74, 222, 128, 0.2);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes popIn {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
 }
 
 @media (max-width: 640px) {
@@ -188,3 +295,5 @@
         width: 100%;
     }
 }
+
+
