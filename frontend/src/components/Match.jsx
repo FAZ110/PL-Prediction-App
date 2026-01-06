@@ -15,9 +15,9 @@ function Match({ data }) {
     // --- 1. DETERMINE TIER CLASS ---
     const getTierClass = (confidence) => {
         if (!confidence) return "";
-        if (confidence >= 0.55) return "tier-gold";
-        if (confidence >= 0.50) return "tier-silver";
-        if (confidence >= 0.45) return "tier-bronze";
+        if (confidence >= 0.70) return "tier-gold";
+        if (confidence >= 0.60) return "tier-silver";
+        if (confidence >= 0.55) return "tier-bronze";
         return "tier-risk";
     };
 
