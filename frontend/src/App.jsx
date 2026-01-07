@@ -5,6 +5,7 @@ import UpdateMatches from './components/UpdateMatches'
 import LeagueTable from './components/LeagueTable'
 import Info from './components/Info'
 import Footer from './components/Footer'
+import PredictionLab from './components/PredictionLab'
 
 function App() {
   
@@ -22,11 +23,12 @@ function App() {
        <div className="main-layout">
            
            <div className='matches-grid-wrapper'>
-               <MatchesGrid />
+              <PredictionLab/>
+              <MatchesGrid />
            </div>
 
            <div className='league-table-wrapper'>
-               <LeagueTable />
+              <LeagueTable />
            </div>
 
        </div>
