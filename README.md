@@ -160,4 +160,8 @@ Frontend running at: http://localhost:5173
 
 This tool is for informational and entertainment purposes only. While the model has achieved high accuracy in backtesting, sports outcomes are inherently unpredictable. Use at your own risk.
 
+Sources:
+  - https://www.football-data.co.uk/englandm.php Match data from the database
+  - https://www.football-data.org Football API to fetch upcoming fixtures
+
 Created by: Jan Dyląg
