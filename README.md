@@ -146,6 +146,7 @@ Start the Server:
 uvicorn app.main:app --reload
 ```
 Backend running at: http://127.0.0.1:8000
+
 3. Frontend Setup
 
 Open a new terminal.
@@ -156,6 +157,7 @@ npm install
 npm run dev
 ```
 Frontend running at: http://localhost:5173
+
 ⚠️ Disclaimer
 
 This tool is for informational and entertainment purposes only. While the model has achieved high accuracy in backtesting, sports outcomes are inherently unpredictable. Use at your own risk.
