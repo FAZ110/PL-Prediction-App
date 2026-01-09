@@ -80,7 +80,9 @@ def check_model_accuracy():
         random_state=42,
         n_jobs=-1               # Use all CPUs
     )
-    model.fit(X_train, y_train)
+
+    sample_weights = [1.2 if y == 1 else 1.0 for y in y_train]
+    model.fit(X_train, y_train, sample_weight = sample_weights)
 
     # 6. Predict
     # Get raw probabilities for confidence check

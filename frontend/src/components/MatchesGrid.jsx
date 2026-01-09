@@ -3,6 +3,7 @@ import axios from "axios"
 import "../styles/matchesGrid.css"
 import Match from "./Match";
 import API_URL from "../config";
+import LoadingSpinner from "./LoadingSpinner";
 
 function MatchesGrid(){
     const [matches, setMatches] = useState([]);
@@ -17,7 +18,7 @@ function MatchesGrid(){
                 const response = await axios.get(`${API_URL}/upcoming`);
                 setMatches(response.data)
             } catch (error) {
-                console.error("Error fetching matcher: ", error)
+                console.error("Error fetching matches: ", error)
                 
             }finally{
                 setLoading(false)
@@ -27,7 +28,7 @@ function MatchesGrid(){
         fetchMatches()
     }, [])
 
-    if (loading) return <p>Loading upcoming matches...</p>
+    if (loading) return <LoadingSpinner message="Waking up the AI..."/>
 
 
     return(

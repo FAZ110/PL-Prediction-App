@@ -3,7 +3,7 @@ import { useState } from "react"
 import API_URL from "../config";
 import { getTeamLogo } from "../utils/teamLogos";
 import '../styles/predictionLab.css'
-
+import LoadingSpinner from "./LoadingSpinner";
 
 export const TEAMS = [
     "Arsenal", 
@@ -97,6 +97,7 @@ function PredictionLab(){
                 {loading ? "Simulating..." : "Predict"}
             </button>
 
+            {loading && <LoadingSpinner message="Calculating probabilities..." />}
             {error && <p className="lab-error">{error}</p>}
 
             {prediction && (
@@ -106,7 +107,6 @@ function PredictionLab(){
                         {(prediction.confidence * 100).toFixed(1)}%
                     </span></p>
                     
-                    {/* Optional: Add Stats Comparison here like in Match.jsx! */}
                 </div>
             )}
             
