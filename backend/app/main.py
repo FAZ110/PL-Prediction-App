@@ -5,14 +5,12 @@ import requests
 import joblib
 import pandas as pd
 import os
-import io
 from dotenv import load_dotenv
 from sqlalchemy import text
 import pickle
 
 from .database import engine
 from .prediction_engine import predict_match_optimized
-from .utils import calculate_elo_ratings, calculate_team_form
 
 load_dotenv()
 
@@ -26,12 +24,11 @@ if not API_KEY:
     print("WARNING: No API Key found! Check your .env file.")
 
 
-origins = [
-    "http://localhost:5173",                      # For local development
-    "http://127.0.0.1:5173",                      # Alternative local address
-    "https://pl-prediction-app-mu.vercel.app",    # Your production Vercel URL
-    "https://pl-prediction-app-mu.vercel.app/"    # Sometimes Vercel adds a slash, safe to add both
-]
+_raw_origins = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:5173,http://127.0.0.1:5173,https://pl-prediction-app-mu.vercel.app,https://pl-prediction-app-mu.vercel.app/"
+)
+origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
@@ -80,15 +77,6 @@ if model is None:
     except FileNotFoundError:
         print("Encoders not Found!!")
 
-
-# history_path = os.path.join(BASE_DIR, 'match_history.csv')
-# try:
-#     df_history = pd.read_csv(history_path)
-#     if 'DateTime' in df_history.columns:
-#         df_history['DateTime'] = pd.to_datetime(df_history['DateTime'])
-#     print("History Loaded")
-# except FileNotFoundError:
-#     print("History csv not found")
 
 def load_data():
     print("Loading data from Database...")
@@ -164,7 +152,7 @@ def get_upcoming_matches():
 
     url = f"{BASE_URL}/competitions/PL/matches?status=SCHEDULED"
 
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=headers, timeout=10)
 
     if response.status_code != 200:
         raise HTTPException(status_code=response.status_code, detail="Failed to fetch matches")
@@ -183,7 +171,11 @@ def get_upcoming_matches():
 
 @app.post("/predict")
 def predict_match(match: MatchPredictionRequest):
-    
+    if not match.home_team.strip() or not match.away_team.strip():
+        raise HTTPException(status_code=422, detail="Team names cannot be empty.")
+    if match.home_team.strip().lower() == match.away_team.strip().lower():
+        raise HTTPException(status_code=422, detail="Home and away teams must be different.")
+
     if model is None or le is None:
         return {"error": "Model is not loaded. Please run the training script or upload .pkl files."}
     global df_history
@@ -220,34 +212,27 @@ def predict_match(match: MatchPredictionRequest):
 @app.get("/last-updated")
 def get_latest_update(response: Response):
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    
-    # 1. Try Real DB
+    error_message = None
+
     try:
         query = "SELECT MAX(date) as last_date FROM matches"
         with engine.connect() as conn:
             result = conn.execute(text(query)).fetchone()
-            clean_date = str(result[0]).split(" ")[0]
             if result and result[0]:
-                return {
-                    "date": clean_date, 
-                    "source": "LIVE_DATABASE"  # <--- If you see this, DB is connected
-                }
+                clean_date = str(result[0]).split(" ")[0]
+                return {"date": clean_date, "source": "LIVE_DATABASE"}
     except Exception as e:
         print(f"DB Error: {e}")
-        # Capture the error to send to frontend
         error_message = str(e)
 
-    # 2. Fallback (This is likely where you are landing)
     if df_history.empty:
         return {"date": "No Data"}
-    
+
     last_date = df_history['Date'].max()
-    
-    return {
-        "date": str(last_date.date()), 
-        "source": "FALLBACK_MEMORY",   # <--- You will likely see this
-        "error_details": error_message # <--- This will tell you WHY the DB failed
-    }
+    result = {"date": str(last_date.date()), "source": "FALLBACK_MEMORY"}
+    if error_message:
+        result["error_details"] = error_message
+    return result
 
 # --- LEAGUE TABLE ---
 
@@ -257,8 +242,7 @@ def get_standings():
 
     url = f"{BASE_URL}/competitions/PL/standings"
 
-    response = requests.get(url, headers=headers)
-
+    response = requests.get(url, headers=headers, timeout=10)
 
     if response.status_code != 200:
         raise HTTPException(status_code=response.status_code, detail="Failed to fetch standings!")

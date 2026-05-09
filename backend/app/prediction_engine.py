@@ -33,8 +33,8 @@ def predict_match_optimized(model, home_team, away_team, df_history, le, feature
     try:
         h_code = le.transform([home])[0]
         a_code = le.transform([away])[0]
-    except:
-        print(f"❌ Error: Team not found ({home} or {away})")
+    except (ValueError, KeyError) as e:
+        print(f"❌ Error: Team not found ({home} or {away}): {e}")
         return None
 
     # 3. Get Relevant History

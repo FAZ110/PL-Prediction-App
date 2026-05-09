@@ -5,15 +5,17 @@ import numpy as np
 from sqlalchemy import text
 from datetime import datetime
 import requests
+from dotenv import load_dotenv
 
 # --- PATH SETUP ---
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
 from app.database import engine
 
 # --- SETTINGS ---
 CSV_URL = "https://www.football-data.co.uk/mmz4281/2526/E0.csv"
 
-DEPLOY_HOOK_URL = "https://api.render.com/deploy/srv-d5991715pdvs73a8hd80?key=D7LRfQUb7bc"
+DEPLOY_HOOK_URL = os.getenv("RENDER_DEPLOY_HOOK_URL", "")
 
 def calculate_rolling_stats(df):
     """Calculates rolling averages for Shots, Corners, and Form."""

@@ -6,43 +6,37 @@ import '../styles/predictionLab.css'
 import LoadingSpinner from "./LoadingSpinner";
 
 export const TEAMS = [
-    "Arsenal", 
-    "Aston Villa", 
-    "Bournemouth", 
-    "Brentford", 
-    "Brighton Hove", 
-    "Burnley", 
-    "Chelsea", 
-    "Crystal Palace", 
-    "Everton", 
-    "Forest", 
-    "Fulham", 
-    "Leeds United", 
-    "Liverpool", 
-    "Man City", 
-    "Man United", 
-    "Newcastle", 
-    "Sunderland", 
-    "Tottenham", 
-    "West Ham", 
-    "Wolverhampton"
+    { label: "Arsenal",                 value: "Arsenal" },
+    { label: "Aston Villa",             value: "Aston Villa" },
+    { label: "Bournemouth",             value: "Bournemouth" },
+    { label: "Brentford",               value: "Brentford" },
+    { label: "Brighton & Hove Albion",  value: "Brighton" },
+    { label: "Burnley",                 value: "Burnley" },
+    { label: "Chelsea",                 value: "Chelsea" },
+    { label: "Crystal Palace",          value: "Crystal Palace" },
+    { label: "Everton",                 value: "Everton" },
+    { label: "Nottingham Forest",       value: "Nott'm Forest" },
+    { label: "Fulham",                  value: "Fulham" },
+    { label: "Leeds United",            value: "Leeds" },
+    { label: "Liverpool",               value: "Liverpool" },
+    { label: "Manchester City",         value: "Man City" },
+    { label: "Manchester United",       value: "Man United" },
+    { label: "Newcastle United",        value: "Newcastle" },
+    { label: "Sunderland",              value: "Sunderland" },
+    { label: "Tottenham Hotspur",       value: "Tottenham" },
+    { label: "West Ham United",         value: "West Ham" },
+    { label: "Wolverhampton Wanderers", value: "Wolves" },
 ];
 
 function PredictionLab(){
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
-    const [homeTeam, setHomeTeam] = useState(TEAMS[0])
-    const [awayTeam, setAwayTeam] = useState(TEAMS[1])
+    const [homeTeam, setHomeTeam] = useState(TEAMS[0].value)
+    const [awayTeam, setAwayTeam] = useState(TEAMS[1].value)
     const [prediction, setPrediction] = useState(null)
 
 
     const handlePredict = async () => {
-        if (homeTeam == awayTeam){
-            setError("Please select two different teams.")
-            setPrediction(null);
-            return
-        }
-
         setLoading(true)
         setError(null)
 
@@ -79,7 +73,7 @@ function PredictionLab(){
                 <div className="team-select-box">
                     <img src={getTeamLogo(homeTeam)} alt={homeTeam} className="lab-logo"/>
                     <select value={homeTeam} onChange={(e) => setHomeTeam(e.target.value)}>
-                        {TEAMS.map(team => <option key={team} value={team}>{team}</option>)}
+                        {TEAMS.map(team => <option key={team.value} value={team.value}>{team.label}</option>)}
                     </select>
                 </div>
 
@@ -88,7 +82,7 @@ function PredictionLab(){
                 <div className="team-select-box">
                     <img src={getTeamLogo(awayTeam)} alt={awayTeam} className="lab-logo"/>
                     <select value={awayTeam} onChange={(e) => setAwayTeam(e.target.value)}>
-                        {TEAMS.map(team => <option key={team} value={team}>{team}</option>)}
+                        {TEAMS.map(team => <option key={team.value} value={team.value}>{team.label}</option>)}
                     </select>
                 </div>
             </div>
