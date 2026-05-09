@@ -11,18 +11,17 @@ import pickle
 
 from .database import engine
 from .prediction_engine import predict_match_optimized
+from .leagues import LEAGUES
 
 load_dotenv()
 
 app = FastAPI()
-
 
 API_KEY = os.getenv("API_KEY")
 BASE_URL = "https://api.football-data.org/v4"
 
 if not API_KEY:
     print("WARNING: No API Key found! Check your .env file.")
-
 
 _raw_origins = os.getenv(
     "ALLOWED_ORIGINS",
@@ -38,86 +37,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def load_dynamic_model():
-    print("📥 Checking Database for updated model...")
-    try:
-        query = text("SELECT model_binary, encoder_binary FROM model_store ORDER BY id DESC LIMIT 1")
-        with engine.connect() as conn:
-            result = conn.execute(query).fetchone()
-            
-        if result:
-            model_blob, encoder_blob = result
-            dyn_model = pickle.loads(model_blob)
-            dyn_le = pickle.loads(encoder_blob)
-            print("✅ Loaded latest model from Database!")
-            return dyn_model, dyn_le
-    except Exception as e:
-        print(f"⚠️ DB Model Load failed (using fallback): {e}")
-    return None, None
-
-model, le = load_dynamic_model()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-model_path = os.path.join(BASE_DIR, "..", "ml_artifacts", "football_model_final.pkl")
 
-
-if model is None:
-
-    try:
-        model = joblib.load(model_path)
-        print("Static model loaded")
-    except FileNotFoundError:
-        print("WARNING: Model file not found. Prediction endpoint will fail.")
-
-
-    encoder_path = os.path.join(BASE_DIR, "..", "ml_artifacts", 'team_encoders.pkl')
-    try:
-        le = joblib.load(encoder_path)
-        print("Static encoders loaded")
-    except FileNotFoundError:
-        print("Encoders not Found!!")
-
-
-def load_data():
-    print("Loading data from Database...")
-    try:
-        # Read from Database
-        query = "SELECT * FROM matches"
-        df = pd.read_sql(query, engine)
-        
-        # ⚠️ CRITICAL: Rename columns back to what the ML Model expects
-        # The DB gives 'home_team', but your model likely wants 'HomeTeam'
-        rename_map = {
-            'home_team': 'HomeTeam',
-            'away_team': 'AwayTeam',
-            'season': 'Season',
-            'date': 'Date',
-            'fthg': 'FTHG',
-            'ftag': 'FTAG',
-            'ftr': 'FTR',
-            'home_elo': 'HomeElo',
-            'away_elo': 'AwayElo',
-            'elo_difference': 'EloDifference',
-            'points_difference': 'PointsDifference',
-            'home_team_code': 'HomeTeamCode',
-            'away_team_code': 'AwayTeamCode',
-            'hst': 'HST', 'ast': 'AST', 'hc': 'HC', 'ac': 'AC'
-            # Note: snake_case stats (e.g., home_wins_last_5) are usually fine 
-            # as they were likely snake_case in your training CSV too.
-        }
-        df = df.rename(columns=rename_map)
-        
-        # Fix Date format
-        df['Date'] = pd.to_datetime(df['Date'])
-        
-        print(f"✅ Loaded {len(df)} matches from Database.")
-        return df
-    except Exception as e:
-        print(f"❌ Database Load Error: {e}")
-        return pd.DataFrame()
-
-df_history = load_data()
-
+rename_map = {
+    'home_team': 'HomeTeam', 'away_team': 'AwayTeam',
+    'season': 'Season', 'date': 'Date',
+    'fthg': 'FTHG', 'ftag': 'FTAG', 'ftr': 'FTR',
+    'home_elo': 'HomeElo', 'away_elo': 'AwayElo',
+    'elo_difference': 'EloDifference', 'points_difference': 'PointsDifference',
+    'home_team_code': 'HomeTeamCode', 'away_team_code': 'AwayTeamCode',
+    'hst': 'HST', 'ast': 'AST', 'hc': 'HC', 'ac': 'AC'
+}
 
 feature_columns = [
     'home_wins_last_5', 'home_draws_last_5', 'home_losses_last_5',
@@ -126,41 +57,88 @@ feature_columns = [
     'away_goals_scored_avg', 'away_goals_conceded_avg',
     'home_points_last_5', 'away_points_last_5', 'PointsDifference',
     'HomeElo', 'AwayElo', 'EloDifference', 'HomeTeamCode', 'AwayTeamCode',
-    'home_sot_avg', 'home_corners_avg',
-    'away_sot_avg', 'away_corners_avg'
+    'home_sot_avg', 'home_corners_avg', 'away_sot_avg', 'away_corners_avg'
 ]
+
+
+def load_dynamic_model(league: str = 'PL'):
+    try:
+        query = text("SELECT model_binary, encoder_binary FROM model_store WHERE league=:l ORDER BY id DESC LIMIT 1")
+        with engine.connect() as conn:
+            result = conn.execute(query, {"l": league}).fetchone()
+        if result:
+            m = pickle.loads(result[0])
+            le = pickle.loads(result[1])
+            print(f"✅ Model loaded from DB: {league}")
+            return m, le
+    except Exception as e:
+        print(f"⚠️ DB Model Load failed ({league}): {e}")
+    return None, None
+
+
+def load_data(league: str = 'PL'):
+    try:
+        df = pd.read_sql(f"SELECT * FROM matches WHERE league='{league}'", engine)
+        df = df.rename(columns=rename_map)
+        df['Date'] = pd.to_datetime(df['Date'])
+        print(f"✅ Loaded {len(df)} matches for {league}")
+        return df
+    except Exception as e:
+        print(f"❌ DB Load Error ({league}): {e}")
+        return pd.DataFrame()
+
+
+# Słowniki modeli i historii per liga
+MODELS: dict = {}
+DF_HISTORY: dict = {}
+
+for _league in LEAGUES:
+    _model, _le = load_dynamic_model(_league)
+    if _model:
+        MODELS[_league] = (_model, _le)
+    DF_HISTORY[_league] = load_data(_league)
+
+# Fallback na pliki .pkl tylko dla PL
+if 'PL' not in MODELS:
+    try:
+        _m = joblib.load(os.path.join(BASE_DIR, "..", "ml_artifacts", "football_model_final.pkl"))
+        _le = joblib.load(os.path.join(BASE_DIR, "..", "ml_artifacts", "team_encoders.pkl"))
+        MODELS['PL'] = (_m, _le)
+        print("✅ PL fallback model loaded from .pkl files")
+    except FileNotFoundError:
+        print("WARNING: No PL model found (DB or .pkl). /predict will fail for PL.")
+
+
+# --- SCHEMAS ---
 
 class MatchPredictionRequest(BaseModel):
     home_team: str
     away_team: str
+    league: str = 'PL'
 
 
-
-
-
-# ENDPOINTS
+# --- ENDPOINTS ---
 
 @app.get("/")
 def home():
-    return {"message": "Premier League Predictor API is Alive!"}
+    return {"message": "Sports Prediction API is Alive!", "leagues": list(LEAGUES.keys())}
 
 
 @app.get("/upcoming")
-def get_upcoming_matches():
+def get_upcoming_matches(league: str = 'PL'):
+    if league not in LEAGUES:
+        raise HTTPException(status_code=400, detail=f"Unknown league: {league}. Available: {list(LEAGUES.keys())}")
 
+    competition_code = LEAGUES[league]['competition_code']
     headers = {"X-Auth-Token": API_KEY}
-
-    url = f"{BASE_URL}/competitions/PL/matches?status=SCHEDULED"
+    url = f"{BASE_URL}/competitions/{competition_code}/matches?status=SCHEDULED"
 
     response = requests.get(url, headers=headers, timeout=10)
-
     if response.status_code != 200:
         raise HTTPException(status_code=response.status_code, detail="Failed to fetch matches")
-    
-    data = response.json()
-    matches = []
 
-    for match in data.get("matches", [])[:10]:
+    matches = []
+    for match in response.json().get("matches", [])[:10]:
         matches.append({
             "homeTeam": match['homeTeam']['shortName'],
             "awayTeam": match['awayTeam']['shortName'],
@@ -169,90 +147,86 @@ def get_upcoming_matches():
         })
     return matches
 
+
 @app.post("/predict")
 def predict_match(match: MatchPredictionRequest):
     if not match.home_team.strip() or not match.away_team.strip():
         raise HTTPException(status_code=422, detail="Team names cannot be empty.")
     if match.home_team.strip().lower() == match.away_team.strip().lower():
         raise HTTPException(status_code=422, detail="Home and away teams must be different.")
+    if match.league not in LEAGUES:
+        raise HTTPException(status_code=400, detail=f"Unknown league: {match.league}")
 
-    if model is None or le is None:
-        return {"error": "Model is not loaded. Please run the training script or upload .pkl files."}
-    global df_history
-    if df_history.empty: df_history = load_data()
+    if match.league not in MODELS:
+        return {"error": f"Model for {match.league} not trained yet. Run retrain for this league first."}
+
+    model, le = MODELS[match.league]
+    df = DF_HISTORY.get(match.league, pd.DataFrame())
+
+    if df.empty:
+        return {"error": f"No historical data for {match.league}. Run backfill first."}
 
     result = predict_match_optimized(
-        model,
-        match.home_team,
-        match.away_team,
-        df_history,
-        le,
-        feature_columns
+        model, match.home_team, match.away_team, df, le, feature_columns,
+        league=match.league
     )
 
     if result:
         winner, probs, h_stats, a_stats = result
-        confidence = max(probs)
-
         return {
             "home_team": match.home_team,
             "away_team": match.away_team,
-            "prediction": winner, 
-            "confidence": float(confidence),
+            "league": match.league,
+            "prediction": winner,
+            "confidence": float(max(probs)),
             "home_stats": h_stats,
             "away_stats": a_stats
         }
-    else:
-        return {"error": f"Could not predict. Maybe team name was wrong {match.home_team} or {match.away_team}?"}
+    return {"error": f"Could not predict. Check team names: {match.home_team} / {match.away_team}"}
 
-
-
-# In backend/main.py
 
 @app.get("/last-updated")
-def get_latest_update(response: Response):
+def get_latest_update(response: Response, league: str = 'PL'):
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     error_message = None
 
     try:
-        query = "SELECT MAX(date) as last_date FROM matches"
         with engine.connect() as conn:
-            result = conn.execute(text(query)).fetchone()
-            if result and result[0]:
-                clean_date = str(result[0]).split(" ")[0]
-                return {"date": clean_date, "source": "LIVE_DATABASE"}
+            result = conn.execute(
+                text("SELECT MAX(date) as last_date FROM matches WHERE league=:l"),
+                {"l": league}
+            ).fetchone()
+        if result and result[0]:
+            return {"date": str(result[0]).split(" ")[0], "source": "LIVE_DATABASE"}
     except Exception as e:
         print(f"DB Error: {e}")
         error_message = str(e)
 
-    if df_history.empty:
+    df = DF_HISTORY.get(league, pd.DataFrame())
+    if df.empty:
         return {"date": "No Data"}
 
-    last_date = df_history['Date'].max()
-    result = {"date": str(last_date.date()), "source": "FALLBACK_MEMORY"}
+    out = {"date": str(df['Date'].max().date()), "source": "FALLBACK_MEMORY"}
     if error_message:
-        result["error_details"] = error_message
-    return result
+        out["error_details"] = error_message
+    return out
 
-# --- LEAGUE TABLE ---
 
 @app.get("/standings")
-def get_standings():
-    headers = {"X-Auth-Token": API_KEY}
+def get_standings(league: str = 'PL'):
+    if league not in LEAGUES:
+        raise HTTPException(status_code=400, detail=f"Unknown league: {league}")
 
-    url = f"{BASE_URL}/competitions/PL/standings"
+    competition_code = LEAGUES[league]['competition_code']
+    headers = {"X-Auth-Token": API_KEY}
+    url = f"{BASE_URL}/competitions/{competition_code}/standings"
 
     response = requests.get(url, headers=headers, timeout=10)
-
     if response.status_code != 200:
         raise HTTPException(status_code=response.status_code, detail="Failed to fetch standings!")
-    
-    data = response.json()
+
     standings = []
-
-    table = data['standings'][0]['table']
-
-    for team in table:
+    for team in response.json()['standings'][0]['table']:
         standings.append({
             "position": team['position'],
             "name": team['team']['shortName'],
@@ -263,9 +237,4 @@ def get_standings():
             "points": team['points'],
             "goalDifference": team['goalDifference']
         })
-
     return standings
-# --- AUTOMATIC DATA UPDATED ---
-
-
-

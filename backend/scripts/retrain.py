@@ -2,28 +2,27 @@ import sys
 import os
 import pandas as pd
 import pickle
-import xgboost as xgb  # <-- NEW IMPORT
+import xgboost as xgb  
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sqlalchemy import text
+from app.leagues import LEAGUES
 
-# --- PATH SETUP ---
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import engine
 
-def retrain_model():
-    print("🧠 Starting XGBoost Model Retraining... [V3 - XGBoost Upgrade]")
+def retrain_model(league_code: str = 'PL'):
+    print("Starting Model Retraining... ")
     
-    # 1. Load Data (Memory Safe)
     try:
-        # Loading matches from 2019 onwards to save RAM
-        query = "SELECT * FROM matches WHERE date > '2015-08-01'"
+        query = f"SELECT * FROM matches WHERE league = '{league_code}' AND date > '2015-08-01'"
         df = pd.read_sql(query, engine)
-        print(f"📊 Loaded {len(df)} matches from Database.")
+        print(f"Loaded {len(df)} matches from Database.")
     except Exception as e:
-        print(f"❌ Failed to load data: {e}")
+        print(f"Failed to load data: {e}")
         return
 
     # Rename columns to match what the model expects
@@ -66,8 +65,7 @@ def retrain_model():
     X = df[features]
     y = df['ftr']
 
-    # XGBoost requires target classes to be 0, 1, 2 (Integers)
-    # We use a LabelEncoder for the Target (Result) too
+    
     target_encoder = LabelEncoder()
     y_encoded = target_encoder.fit_transform(y)
     # Important: Save this mapping so we know 0=Away, 1=Draw, etc.
@@ -75,14 +73,12 @@ def retrain_model():
 
     # 3. Train
     if len(df) < 50:
-        print("⚠️ Not enough data to train! Skipping.")
+        print("Not enough data to train! Skipping.")
         return
 
     X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, test_size=0.2, random_state=42)
 
-    # --- XGBOOST CONFIGURATION ---
-    # We use the parameters from your grid search, but HARDCODED.
-    # This gives us the performance benefits without the 'Search' time cost.
+    
     model = xgb.XGBClassifier(
         n_estimators=400,       # From your grid (middle ground)
         learning_rate=0.01,     # Slow & steady learning
@@ -99,35 +95,32 @@ def retrain_model():
     # Evaluate
     predictions = model.predict(X_test)
     acc = accuracy_score(y_test, predictions)
-    print(f"🎯 New XGBoost Accuracy: {acc:.2%}")
+    print(f"New XGBoost Accuracy for {league_code}: {acc:.2%}")
 
-    # 4. Save to Database
-    # We need to save BOTH the model AND the team encoder AND the target encoder
-    # But currently your DB only expects 'model' and 'encoder'. 
-    # For now, we will stick to saving the team encoder as 'encoder_binary'.
-    # The API will just need to know the standard H=Home mapping or we rely on XGBoost's default.
     
-    print("💾 Saving to Database...")
+    
+    print("Saving to Database...")
     model_bytes = pickle.dumps(model)
     encoder_bytes = pickle.dumps(le)
     
     query = text("""
-        INSERT INTO model_store (model_binary, encoder_binary, accuracy, version_note)
-        VALUES (:m, :e, :a, 'Daily XGBoost Retrain');
+        INSERT INTO model_store (model_binary, encoder_binary, accuracy, version_note, league)
+        VALUES (:m, :e, :a, :note, :league);
     """)
     
-    cleanup_query = text("""
+    cleanup_query = text(f"""
         DELETE FROM model_store 
-        WHERE id NOT IN (
-            SELECT id FROM model_store ORDER BY id DESC LIMIT 5
+        WHERE league = '{league_code}' AND id NOT IN (
+            SELECT id FROM model_store WHERE league = '{league_code}' ORDER BY id DESC LIMIT 5
         );
     """)
 
     with engine.begin() as conn:
-        conn.execute(query, {"m": model_bytes, "e": encoder_bytes, "a": float(acc)})
+        conn.execute(query, {"m": model_bytes, "e": encoder_bytes, "a": float(acc), "note": f"Daily XGBoost - {league_code}", "league": league_code})
         conn.execute(cleanup_query) 
         
     print("✅ XGBoost Model saved successfully!")
 
 if __name__ == "__main__":
-    retrain_model()
+    league = sys.argv[1] if len(sys.argv) > 1 else 'PL'
+    retrain_model(league)

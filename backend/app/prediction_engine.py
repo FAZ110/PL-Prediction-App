@@ -1,9 +1,10 @@
 import pandas as pd
 import numpy as np
 
-def predict_match_optimized(model, home_team, away_team, df_history, le, feature_columns):
+def predict_match_optimized(model, home_team, away_team, df_history, le, feature_columns, league='PL'):
     # 1. Team Name Standardization
-    name_map = {
+    name_maps = {
+    'PL': {
         'Arsenal': 'Arsenal',
         'Aston Villa': 'Aston Villa', 'Villa': 'Aston Villa',
         'Bournemouth': 'Bournemouth',
@@ -24,21 +25,102 @@ def predict_match_optimized(model, home_team, away_team, df_history, le, feature
         'Tottenham Hotspur': 'Tottenham', 'Spurs': 'Tottenham', 'Tottenham': 'Tottenham',
         'West Ham United': 'West Ham', 'West Ham': 'West Ham',
         'Wolverhampton Wanderers': 'Wolves', 'Wolverhampton': 'Wolves', 'Wolves': 'Wolves'
+    },
+    'PD': {
+        'Real Madrid': 'Real Madrid',
+        'Barcelona': 'Barcelona', 'Barca': 'Barcelona',
+        'Atletico Madrid': 'Ath Madrid', 'Atletico': 'Ath Madrid', 'Ath Madrid': 'Ath Madrid',
+        'Sevilla': 'Sevilla',
+        'Valencia': 'Valencia',
+        'Villarreal': 'Villarreal',
+        'Athletic Bilbao': 'Ath Bilbao', 'Ath Bilbao': 'Ath Bilbao',
+        'Real Sociedad': 'Sociedad', 'Sociedad': 'Sociedad',
+        'Real Betis': 'Betis', 'Betis': 'Betis',
+        'Celta Vigo': 'Celta', 'Celta': 'Celta',
+        'Getafe': 'Getafe',
+        'Osasuna': 'Osasuna',
+        'Mallorca': 'Mallorca',
+        'Girona': 'Girona',
+        'Las Palmas': 'Las Palmas',
+        'Leganes': 'Leganes',
+        'Alaves': 'Alaves', 'Deportivo Alaves': 'Alaves',
+        'Rayo Vallecano': 'Vallecano', 'Vallecano': 'Vallecano',
+        'Espanol': 'Espanol',
+        'Cadiz': 'Cadiz',
+        'Almeria': 'Almeria',
+        'Elche': 'Elche',
+        'Granada': 'Granada',
+        'Levante': 'Levante',
+        'Valladolid': 'Valladolid',
+        'Oviedo': 'Oviedo',
+    },
+    'BL1': {
+        'Bayern Munich': 'Bayern Munich', 'Bayern': 'Bayern Munich',
+        'Borussia Dortmund': 'Dortmund', 'Dortmund': 'Dortmund', 'BVB': 'Dortmund',
+        'Bayer Leverkusen': 'Leverkusen', 'Leverkusen': 'Leverkusen',
+        'RB Leipzig': 'RB Leipzig', 'Leipzig': 'RB Leipzig',
+        'Eintracht Frankfurt': 'Ein Frankfurt', 'Frankfurt': 'Ein Frankfurt', 'Ein Frankfurt': 'Ein Frankfurt',
+        'Wolfsburg': 'Wolfsburg',
+        'Freiburg': 'Freiburg',
+        'Hoffenheim': 'Hoffenheim',
+        'Borussia Monchengladbach': "M'gladbach", "M'gladbach": "M'gladbach", 'Gladbach': "M'gladbach",
+        'Union Berlin': 'Union Berlin',
+        'Mainz': 'Mainz',
+        'Augsburg': 'Augsburg',
+        'Werder Bremen': 'Werder Bremen', 'Bremen': 'Werder Bremen',
+        'Stuttgart': 'Stuttgart',
+        'Heidenheim': 'Heidenheim',
+        'St Pauli': 'St Pauli',
+        'Holstein Kiel': 'Holstein Kiel',
+        'FC Koln': 'FC Koln', 'Koln': 'FC Koln',
+        'Schalke 04': 'Schalke 04', 'Schalke': 'Schalke 04',
+        'Hamburg': 'Hamburg',
+        'Hertha': 'Hertha',
+        'Bochum': 'Bochum',
+        'Darmstadt': 'Darmstadt',
+    },
+    'SA': {
+        'Juventus': 'Juventus',
+        'Inter Milan': 'Inter', 'Inter': 'Inter',
+        'AC Milan': 'Milan', 'Milan': 'Milan',
+        'AS Roma': 'Roma', 'Roma': 'Roma',
+        'Lazio': 'Lazio',
+        'Napoli': 'Napoli',
+        'Atalanta': 'Atalanta',
+        'Fiorentina': 'Fiorentina',
+        'Torino': 'Torino',
+        'Bologna': 'Bologna',
+        'Udinese': 'Udinese',
+        'Sassuolo': 'Sassuolo',
+        'Empoli': 'Empoli',
+        'Cagliari': 'Cagliari',
+        'Genoa': 'Genoa',
+        'Hellas Verona': 'Verona', 'Verona': 'Verona',
+        'Lecce': 'Lecce',
+        'Monza': 'Monza',
+        'Parma': 'Parma',
+        'Como': 'Como',
+        'Venezia': 'Venezia',
+        'Cremonese': 'Cremonese',
+        'Frosinone': 'Frosinone',
+        'Pisa': 'Pisa',
+        'Salernitana': 'Salernitana',
+        'Sampdoria': 'Sampdoria',
+        'Spezia': 'Spezia',
+    },
     }
 
+    name_map = name_maps.get(league, name_maps['PL'])
     home = name_map.get(home_team, home_team)
     away = name_map.get(away_team, away_team)
     
-    # 2. Encode
     try:
         h_code = le.transform([home])[0]
         a_code = le.transform([away])[0]
     except (ValueError, KeyError) as e:
-        print(f"❌ Error: Team not found ({home} or {away}): {e}")
+        print(f" Error: Team not found ({home} or {away}): {e}")
         return None
 
-    # 3. Get Relevant History
-    # --- CHANGED: Now grabbing LAST 10 matches ---
     N_MATCHES = 10 
     
     games_h = df_history[(df_history['HomeTeam'] == home) | (df_history['AwayTeam'] == home)].sort_values('Date')
@@ -55,8 +137,8 @@ def predict_match_optimized(model, home_team, away_team, df_history, le, feature
         gs, gc = 0, 0
         sot, corners = 0, 0
         
-        count = len(last_games) # Should be 10, but safely handle if less
-        if count == 0: count = 1 # Avoid division by zero
+        count = len(last_games) 
+        if count == 0: count = 1
 
         for _, row in last_games.iterrows():
             is_home = row['HomeTeam'] == team
@@ -84,7 +166,6 @@ def predict_match_optimized(model, home_team, away_team, df_history, le, feature
         last_game = all_games.iloc[-1]
         elo = last_game['HomeElo'] if last_game['HomeTeam'] == team else last_game['AwayElo']
         
-        # --- CHANGED: Averaging by actual count (approx 10) ---
         return {
             'elo': elo, 'wins': wins, 'draws': draws, 'losses': losses,
             'pts': pts,

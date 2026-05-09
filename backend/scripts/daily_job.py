@@ -6,13 +6,13 @@ from sqlalchemy import text
 from datetime import datetime
 import requests
 from dotenv import load_dotenv
+from app.leagues import LEAGUES
 
 # --- PATH SETUP ---
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
 from app.database import engine
 
-# --- SETTINGS ---
 CSV_URL = "https://www.football-data.co.uk/mmz4281/2526/E0.csv"
 
 DEPLOY_HOOK_URL = os.getenv("RENDER_DEPLOY_HOOK_URL", "")
@@ -145,8 +145,10 @@ def update_elo(df):
         
     return df
 
-def run_daily_job():
-    print("🤖 Starting Daily Update Job...")
+def run_daily_job(league_code: str = 'PL'):
+    league = LEAGUES[league_code]
+    CSV_URL = league['csv_seasons'][league['current_season']]
+    print(f"🤖 Starting Daily Update Job for {league['name']}...")
     
     # 1. Download New Data
     print(f"⬇️ Downloading latest data from {CSV_URL}...")
@@ -160,7 +162,8 @@ def run_daily_job():
         })
         # Standardize Date
         new_data['date'] = pd.to_datetime(new_data['date'], dayfirst=True)
-        new_data['season'] = '2025-26'
+        new_data['season'] = league['current_season']
+        new_data['league'] = league_code   
     except Exception as e:
         print(f"❌ Failed to download: {e}")
         return
@@ -168,7 +171,7 @@ def run_daily_job():
     # 2. Load Old Data from DB
     print("📥 Loading current database...")
     try:
-        old_data = pd.read_sql("SELECT * FROM matches", engine)
+        old_data = pd.read_sql(f"SELECT * FROM matches WHERE league = '{league_code}'", engine)
         old_data['date'] = pd.to_datetime(old_data['date'])
     except Exception as e:
         print(f"⚠️ DB Read Error (Might be empty): {e}")
@@ -207,16 +210,18 @@ def run_daily_job():
     print("✅ Feature engineering complete!")
 
     # 5. Save Back to DB
-    print("💾 Overwriting Database with updated stats...")
-    full_df.to_sql('matches', engine, if_exists='replace', index=False)
-    
+    print("💾 Saving updated stats to Database...")
+    full_df['league'] = league_code
+    with engine.begin() as conn:
+        conn.execute(text(f"DELETE FROM matches WHERE league = '{league_code}'"))
+    full_df.to_sql('matches', engine, if_exists='append', index=False)
+
     print("✅ Daily Update Complete!")
-    
+
     # 6. Trigger Retraining
     print("🔄 Triggering Auto-Retraining...")
-    # We import here to avoid circular imports
     from scripts.retrain import retrain_model
-    retrain_model()
+    retrain_model(league_code)
 
     print("🚀 Triggering API Auto-Deployment...")
     if "api.render.com" in DEPLOY_HOOK_URL:
@@ -232,4 +237,5 @@ def run_daily_job():
         print("⚠️ No Deploy Hook URL set. Skipping auto-deploy.")
 
 if __name__ == "__main__":
-    run_daily_job()
+    league = sys.argv[1] if len(sys.argv) > 1 else 'PL'
+    run_daily_job(league)
