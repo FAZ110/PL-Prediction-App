@@ -6,13 +6,13 @@ from sqlalchemy import text
 from datetime import datetime
 import requests
 from dotenv import load_dotenv
+from app.leagues import LEAGUES
 
 # --- PATH SETUP ---
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
 from app.database import engine
 
-# --- SETTINGS ---
 CSV_URL = "https://www.football-data.co.uk/mmz4281/2526/E0.csv"
 
 DEPLOY_HOOK_URL = os.getenv("RENDER_DEPLOY_HOOK_URL", "")
@@ -23,11 +23,11 @@ def calculate_rolling_stats(df):
     
     # Initialize columns with 0
     cols_to_init = [
-        'home_wins_last_5', 'home_draws_last_5', 'home_losses_last_5',
-        'away_wins_last_5', 'away_draws_last_5', 'away_losses_last_5',
+        'home_wins_last_10', 'home_draws_last_10', 'home_losses_last_10',
+        'away_wins_last_10', 'away_draws_last_10', 'away_losses_last_10',
         'home_goals_scored_avg', 'home_goals_conceded_avg',
         'away_goals_scored_avg', 'away_goals_conceded_avg',
-        'home_points_last_5', 'away_points_last_5',
+        'home_points_last_10', 'away_points_last_10',
         'home_sot_avg', 'home_corners_avg',
         'away_sot_avg', 'away_corners_avg'
     ]
@@ -49,32 +49,32 @@ def calculate_rolling_stats(df):
         # --- 1. GET HISTORY FOR HOME TEAM ---
         history = team_stats[home]
         if len(history) > 0:
-            last_5 = history[-5:]
-            df.at[index, 'home_wins_last_5'] = sum(1 for m in last_5 if m['result'] == 'W')
-            df.at[index, 'home_draws_last_5'] = sum(1 for m in last_5 if m['result'] == 'D')
-            df.at[index, 'home_losses_last_5'] = sum(1 for m in last_5 if m['result'] == 'L')
-            df.at[index, 'home_points_last_5'] = sum(m['points'] for m in last_5)
-            
+            last_10 = history[-10:]
+            df.at[index, 'home_wins_last_10'] = sum(1 for m in last_10 if m['result'] == 'W')
+            df.at[index, 'home_draws_last_10'] = sum(1 for m in last_10 if m['result'] == 'D')
+            df.at[index, 'home_losses_last_10'] = sum(1 for m in last_10 if m['result'] == 'L')
+            df.at[index, 'home_points_last_10'] = sum(m['points'] for m in last_10)
+
             # Advanced Stats (SOT, Corners, Goals)
-            df.at[index, 'home_goals_scored_avg'] = np.mean([m['goals_for'] for m in last_5])
-            df.at[index, 'home_goals_conceded_avg'] = np.mean([m['goals_against'] for m in last_5])
-            df.at[index, 'home_sot_avg'] = np.mean([m['sot'] for m in last_5])
-            df.at[index, 'home_corners_avg'] = np.mean([m['corners'] for m in last_5])
-        
+            df.at[index, 'home_goals_scored_avg'] = np.mean([m['goals_for'] for m in last_10])
+            df.at[index, 'home_goals_conceded_avg'] = np.mean([m['goals_against'] for m in last_10])
+            df.at[index, 'home_sot_avg'] = np.mean([m['sot'] for m in last_10])
+            df.at[index, 'home_corners_avg'] = np.mean([m['corners'] for m in last_10])
+
         # --- 2. GET HISTORY FOR AWAY TEAM ---
         history = team_stats[away]
         if len(history) > 0:
-            last_5 = history[-5:]
-            df.at[index, 'away_wins_last_5'] = sum(1 for m in last_5 if m['result'] == 'W')
-            df.at[index, 'away_draws_last_5'] = sum(1 for m in last_5 if m['result'] == 'D')
-            df.at[index, 'away_losses_last_5'] = sum(1 for m in last_5 if m['result'] == 'L')
-            df.at[index, 'away_points_last_5'] = sum(m['points'] for m in last_5)
-            
+            last_10 = history[-10:]
+            df.at[index, 'away_wins_last_10'] = sum(1 for m in last_10 if m['result'] == 'W')
+            df.at[index, 'away_draws_last_10'] = sum(1 for m in last_10 if m['result'] == 'D')
+            df.at[index, 'away_losses_last_10'] = sum(1 for m in last_10 if m['result'] == 'L')
+            df.at[index, 'away_points_last_10'] = sum(m['points'] for m in last_10)
+
             # Advanced Stats
-            df.at[index, 'away_goals_scored_avg'] = np.mean([m['goals_for'] for m in last_5])
-            df.at[index, 'away_goals_conceded_avg'] = np.mean([m['goals_against'] for m in last_5])
-            df.at[index, 'away_sot_avg'] = np.mean([m['sot'] for m in last_5])
-            df.at[index, 'away_corners_avg'] = np.mean([m['corners'] for m in last_5])
+            df.at[index, 'away_goals_scored_avg'] = np.mean([m['goals_for'] for m in last_10])
+            df.at[index, 'away_goals_conceded_avg'] = np.mean([m['goals_against'] for m in last_10])
+            df.at[index, 'away_sot_avg'] = np.mean([m['sot'] for m in last_10])
+            df.at[index, 'away_corners_avg'] = np.mean([m['corners'] for m in last_10])
 
         # --- 3. UPDATE HISTORY AFTER MATCH ---
         # Skip updating if match hasn't happened yet (Result is None)
@@ -145,8 +145,10 @@ def update_elo(df):
         
     return df
 
-def run_daily_job():
-    print("🤖 Starting Daily Update Job...")
+def run_daily_job(league_code: str = 'PL'):
+    league = LEAGUES[league_code]
+    CSV_URL = league['csv_seasons'][league['current_season']]
+    print(f"🤖 Starting Daily Update Job for {league['name']}...")
     
     # 1. Download New Data
     print(f"⬇️ Downloading latest data from {CSV_URL}...")
@@ -160,7 +162,8 @@ def run_daily_job():
         })
         # Standardize Date
         new_data['date'] = pd.to_datetime(new_data['date'], dayfirst=True)
-        new_data['season'] = '2025-26'
+        new_data['season'] = league['current_season']
+        new_data['league'] = league_code   
     except Exception as e:
         print(f"❌ Failed to download: {e}")
         return
@@ -168,7 +171,7 @@ def run_daily_job():
     # 2. Load Old Data from DB
     print("📥 Loading current database...")
     try:
-        old_data = pd.read_sql("SELECT * FROM matches", engine)
+        old_data = pd.read_sql(f"SELECT * FROM matches WHERE league = '{league_code}'", engine)
         old_data['date'] = pd.to_datetime(old_data['date'])
     except Exception as e:
         print(f"⚠️ DB Read Error (Might be empty): {e}")
@@ -202,21 +205,23 @@ def run_daily_job():
     full_df = update_elo(full_df)
     
     # Calculate Points Diff
-    full_df['points_difference'] = full_df['home_points_last_5'] - full_df['away_points_last_5']
+    full_df['points_difference'] = full_df['home_points_last_10'] - full_df['away_points_last_10']
 
     print("✅ Feature engineering complete!")
 
     # 5. Save Back to DB
-    print("💾 Overwriting Database with updated stats...")
-    full_df.to_sql('matches', engine, if_exists='replace', index=False)
-    
+    print("💾 Saving updated stats to Database...")
+    full_df['league'] = league_code
+    with engine.begin() as conn:
+        conn.execute(text(f"DELETE FROM matches WHERE league = '{league_code}'"))
+    full_df.to_sql('matches', engine, if_exists='append', index=False)
+
     print("✅ Daily Update Complete!")
-    
+
     # 6. Trigger Retraining
     print("🔄 Triggering Auto-Retraining...")
-    # We import here to avoid circular imports
     from scripts.retrain import retrain_model
-    retrain_model()
+    retrain_model(league_code)
 
     print("🚀 Triggering API Auto-Deployment...")
     if "api.render.com" in DEPLOY_HOOK_URL:
@@ -232,4 +237,5 @@ def run_daily_job():
         print("⚠️ No Deploy Hook URL set. Skipping auto-deploy.")
 
 if __name__ == "__main__":
-    run_daily_job()
+    league = sys.argv[1] if len(sys.argv) > 1 else 'PL'
+    run_daily_job(league)

@@ -1,4 +1,4 @@
-# --- Python Basics ---
+# --- Python ---
 __pycache__/
 *.py[cod]
 *$py.class
@@ -8,22 +8,17 @@ __pycache__/
 venv/
 env/
 .env
+backend/.env
 
-# --- Datasets ---
-# I commented this out so you CAN track your CSVs
-# *.csv 
+# --- Datasets & local DB ---
+backend/data/
+*.csv
+*.db
 
-
-
-# --- Model Artifacts ---
-# Keep these ignored if your models are >100MB (GitHub limit)
-# If you want to track them, comment these out too.
+# --- Model Artifacts (kept as PL fallback — small enough for git) ---
+# Uncomment to ignore if models exceed 100MB:
 # *.pkl
 # *.joblib
-# football_model.pkl
-# football_model_final.pkl
-
-.test_db_py
 
 # --- OS / Editor ---
 .DS_Store
@@ -32,8 +27,9 @@ env/
 
 # --- Node / Frontend ---
 frontend/node_modules/
+frontend/dist/
 frontend/build/
-.DS_Store
+frontend/.env
 
-# *.txt
+# --- Misc ---
 note.txt

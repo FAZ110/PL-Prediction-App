@@ -1,29 +1,28 @@
 import sys
 import os
+import numpy as np
 import pandas as pd
 import pickle
-import xgboost as xgb  # <-- NEW IMPORT
+import xgboost as xgb
 from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sqlalchemy import text
+from app.leagues import LEAGUES
 
-# --- PATH SETUP ---
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import engine
 
-def retrain_model():
-    print("🧠 Starting XGBoost Model Retraining... [V3 - XGBoost Upgrade]")
+def retrain_model(league_code: str = 'PL'):
+    print("Starting Model Retraining... ")
     
-    # 1. Load Data (Memory Safe)
     try:
-        # Loading matches from 2019 onwards to save RAM
-        query = "SELECT * FROM matches WHERE date > '2015-08-01'"
+        query = f"SELECT * FROM matches WHERE league = '{league_code}' AND date > '2015-08-01'"
         df = pd.read_sql(query, engine)
-        print(f"📊 Loaded {len(df)} matches from Database.")
+        print(f"Loaded {len(df)} matches from Database.")
     except Exception as e:
-        print(f"❌ Failed to load data: {e}")
+        print(f"Failed to load data: {e}")
         return
 
     # Rename columns to match what the model expects
@@ -47,11 +46,11 @@ def retrain_model():
     df['AwayTeamCode'] = le.transform(df['away_team'])
     
     features = [
-        'home_wins_last_5', 'home_draws_last_5', 'home_losses_last_5',
-        'away_wins_last_5', 'away_draws_last_5', 'away_losses_last_5',
+        'home_wins_last_10', 'home_draws_last_10', 'home_losses_last_10',
+        'away_wins_last_10', 'away_draws_last_10', 'away_losses_last_10',
         'home_goals_scored_avg', 'home_goals_conceded_avg',
         'away_goals_scored_avg', 'away_goals_conceded_avg',
-        'home_points_last_5', 'away_points_last_5', 'PointsDifference',
+        'home_points_last_10', 'away_points_last_10', 'PointsDifference',
         'HomeElo', 'AwayElo', 'EloDifference', 'HomeTeamCode', 'AwayTeamCode',
         'home_sot_avg', 'home_corners_avg',
         'away_sot_avg', 'away_corners_avg'
@@ -60,74 +59,73 @@ def retrain_model():
     # Clean data & Remove "Ghost Matches"
     df = df.dropna(subset=features)
     df = df[df['ftr'].isin(['H', 'D', 'A'])]
-    
+    df = df.sort_values('date').reset_index(drop=True)
+
     print(f"🧹 Training on {len(df)} valid, finished matches.")
 
-    X = df[features]
-    y = df['ftr']
-
-    # XGBoost requires target classes to be 0, 1, 2 (Integers)
-    # We use a LabelEncoder for the Target (Result) too
     target_encoder = LabelEncoder()
-    y_encoded = target_encoder.fit_transform(y)
-    # Important: Save this mapping so we know 0=Away, 1=Draw, etc.
+    y_encoded = target_encoder.fit_transform(df['ftr'])
     print(f"🔤 Class Mapping: {dict(zip(target_encoder.classes_, target_encoder.transform(target_encoder.classes_)))}")
 
-    # 3. Train
     if len(df) < 50:
-        print("⚠️ Not enough data to train! Skipping.")
+        print("Not enough data to train! Skipping.")
         return
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, test_size=0.2, random_state=42)
+    # Temporalny split — ostatnie 20% meczów jako test (nie losowy)
+    split_idx = int(len(df) * 0.8)
+    train_df = df.iloc[:split_idx]
+    test_df  = df.iloc[split_idx:]
 
-    # --- XGBOOST CONFIGURATION ---
-    # We use the parameters from your grid search, but HARDCODED.
-    # This gives us the performance benefits without the 'Search' time cost.
+    X_train = train_df[features]
+    y_train = y_encoded[:split_idx]
+    X_test  = test_df[features]
+    y_test  = y_encoded[split_idx:]
+
+    # Recency weights — mecze nowsze ważą więcej (decay wykładniczy)
+    max_year = df['date'].dt.year.max()
+    w_train = np.exp(0.15 * (train_df['date'].dt.year - max_year)).values
+
     model = xgb.XGBClassifier(
-        n_estimators=400,       # From your grid (middle ground)
-        learning_rate=0.01,     # Slow & steady learning
-        max_depth=5,            # Prevents overfitting
+        n_estimators=400,
+        learning_rate=0.01,
+        max_depth=5,
         subsample=0.8,
         colsample_bytree=0.8,
         objective='multi:softprob',
         random_state=42,
-        n_jobs=-1               # Use all CPUs
+        n_jobs=-1
     )
-    
-    model.fit(X_train, y_train)
-    
-    # Evaluate
+
+    model.fit(X_train, y_train, sample_weight=w_train)
+
     predictions = model.predict(X_test)
     acc = accuracy_score(y_test, predictions)
-    print(f"🎯 New XGBoost Accuracy: {acc:.2%}")
+    print(f"New XGBoost Accuracy for {league_code}: {acc:.2%}")
 
-    # 4. Save to Database
-    # We need to save BOTH the model AND the team encoder AND the target encoder
-    # But currently your DB only expects 'model' and 'encoder'. 
-    # For now, we will stick to saving the team encoder as 'encoder_binary'.
-    # The API will just need to know the standard H=Home mapping or we rely on XGBoost's default.
     
-    print("💾 Saving to Database...")
+    
+    print("Saving to Database...")
     model_bytes = pickle.dumps(model)
     encoder_bytes = pickle.dumps(le)
     
     query = text("""
-        INSERT INTO model_store (model_binary, encoder_binary, accuracy, version_note)
-        VALUES (:m, :e, :a, 'Daily XGBoost Retrain');
+        INSERT INTO model_store (model_binary, encoder_binary, accuracy, version_note, league)
+        VALUES (:m, :e, :a, :note, :league);
     """)
     
-    cleanup_query = text("""
+    cleanup_query = text(f"""
         DELETE FROM model_store 
-        WHERE id NOT IN (
-            SELECT id FROM model_store ORDER BY id DESC LIMIT 5
+        WHERE league = '{league_code}' AND id NOT IN (
+            SELECT id FROM model_store WHERE league = '{league_code}' ORDER BY id DESC LIMIT 5
         );
     """)
 
     with engine.begin() as conn:
-        conn.execute(query, {"m": model_bytes, "e": encoder_bytes, "a": float(acc)})
+        conn.execute(query, {"m": model_bytes, "e": encoder_bytes, "a": float(acc), "note": f"XGBoost temporal+recency - {league_code}", "league": league_code})
         conn.execute(cleanup_query) 
         
     print("✅ XGBoost Model saved successfully!")
 
 if __name__ == "__main__":
-    retrain_model()
+    league = sys.argv[1] if len(sys.argv) > 1 else 'PL'
+    retrain_model(league)
