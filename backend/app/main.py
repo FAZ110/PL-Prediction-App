@@ -51,11 +51,11 @@ rename_map = {
 }
 
 feature_columns = [
-    'home_wins_last_5', 'home_draws_last_5', 'home_losses_last_5',
-    'away_wins_last_5', 'away_draws_last_5', 'away_losses_last_5',
+    'home_wins_last_10', 'home_draws_last_10', 'home_losses_last_10',
+    'away_wins_last_10', 'away_draws_last_10', 'away_losses_last_10',
     'home_goals_scored_avg', 'home_goals_conceded_avg',
     'away_goals_scored_avg', 'away_goals_conceded_avg',
-    'home_points_last_5', 'away_points_last_5', 'PointsDifference',
+    'home_points_last_10', 'away_points_last_10', 'PointsDifference',
     'HomeElo', 'AwayElo', 'EloDifference', 'HomeTeamCode', 'AwayTeamCode',
     'home_sot_avg', 'home_corners_avg', 'away_sot_avg', 'away_corners_avg'
 ]

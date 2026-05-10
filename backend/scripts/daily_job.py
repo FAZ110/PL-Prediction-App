@@ -23,11 +23,11 @@ def calculate_rolling_stats(df):
     
     # Initialize columns with 0
     cols_to_init = [
-        'home_wins_last_5', 'home_draws_last_5', 'home_losses_last_5',
-        'away_wins_last_5', 'away_draws_last_5', 'away_losses_last_5',
+        'home_wins_last_10', 'home_draws_last_10', 'home_losses_last_10',
+        'away_wins_last_10', 'away_draws_last_10', 'away_losses_last_10',
         'home_goals_scored_avg', 'home_goals_conceded_avg',
         'away_goals_scored_avg', 'away_goals_conceded_avg',
-        'home_points_last_5', 'away_points_last_5',
+        'home_points_last_10', 'away_points_last_10',
         'home_sot_avg', 'home_corners_avg',
         'away_sot_avg', 'away_corners_avg'
     ]
@@ -49,32 +49,32 @@ def calculate_rolling_stats(df):
         # --- 1. GET HISTORY FOR HOME TEAM ---
         history = team_stats[home]
         if len(history) > 0:
-            last_5 = history[-5:]
-            df.at[index, 'home_wins_last_5'] = sum(1 for m in last_5 if m['result'] == 'W')
-            df.at[index, 'home_draws_last_5'] = sum(1 for m in last_5 if m['result'] == 'D')
-            df.at[index, 'home_losses_last_5'] = sum(1 for m in last_5 if m['result'] == 'L')
-            df.at[index, 'home_points_last_5'] = sum(m['points'] for m in last_5)
-            
+            last_10 = history[-10:]
+            df.at[index, 'home_wins_last_10'] = sum(1 for m in last_10 if m['result'] == 'W')
+            df.at[index, 'home_draws_last_10'] = sum(1 for m in last_10 if m['result'] == 'D')
+            df.at[index, 'home_losses_last_10'] = sum(1 for m in last_10 if m['result'] == 'L')
+            df.at[index, 'home_points_last_10'] = sum(m['points'] for m in last_10)
+
             # Advanced Stats (SOT, Corners, Goals)
-            df.at[index, 'home_goals_scored_avg'] = np.mean([m['goals_for'] for m in last_5])
-            df.at[index, 'home_goals_conceded_avg'] = np.mean([m['goals_against'] for m in last_5])
-            df.at[index, 'home_sot_avg'] = np.mean([m['sot'] for m in last_5])
-            df.at[index, 'home_corners_avg'] = np.mean([m['corners'] for m in last_5])
-        
+            df.at[index, 'home_goals_scored_avg'] = np.mean([m['goals_for'] for m in last_10])
+            df.at[index, 'home_goals_conceded_avg'] = np.mean([m['goals_against'] for m in last_10])
+            df.at[index, 'home_sot_avg'] = np.mean([m['sot'] for m in last_10])
+            df.at[index, 'home_corners_avg'] = np.mean([m['corners'] for m in last_10])
+
         # --- 2. GET HISTORY FOR AWAY TEAM ---
         history = team_stats[away]
         if len(history) > 0:
-            last_5 = history[-5:]
-            df.at[index, 'away_wins_last_5'] = sum(1 for m in last_5 if m['result'] == 'W')
-            df.at[index, 'away_draws_last_5'] = sum(1 for m in last_5 if m['result'] == 'D')
-            df.at[index, 'away_losses_last_5'] = sum(1 for m in last_5 if m['result'] == 'L')
-            df.at[index, 'away_points_last_5'] = sum(m['points'] for m in last_5)
-            
+            last_10 = history[-10:]
+            df.at[index, 'away_wins_last_10'] = sum(1 for m in last_10 if m['result'] == 'W')
+            df.at[index, 'away_draws_last_10'] = sum(1 for m in last_10 if m['result'] == 'D')
+            df.at[index, 'away_losses_last_10'] = sum(1 for m in last_10 if m['result'] == 'L')
+            df.at[index, 'away_points_last_10'] = sum(m['points'] for m in last_10)
+
             # Advanced Stats
-            df.at[index, 'away_goals_scored_avg'] = np.mean([m['goals_for'] for m in last_5])
-            df.at[index, 'away_goals_conceded_avg'] = np.mean([m['goals_against'] for m in last_5])
-            df.at[index, 'away_sot_avg'] = np.mean([m['sot'] for m in last_5])
-            df.at[index, 'away_corners_avg'] = np.mean([m['corners'] for m in last_5])
+            df.at[index, 'away_goals_scored_avg'] = np.mean([m['goals_for'] for m in last_10])
+            df.at[index, 'away_goals_conceded_avg'] = np.mean([m['goals_against'] for m in last_10])
+            df.at[index, 'away_sot_avg'] = np.mean([m['sot'] for m in last_10])
+            df.at[index, 'away_corners_avg'] = np.mean([m['corners'] for m in last_10])
 
         # --- 3. UPDATE HISTORY AFTER MATCH ---
         # Skip updating if match hasn't happened yet (Result is None)
@@ -205,7 +205,7 @@ def run_daily_job(league_code: str = 'PL'):
     full_df = update_elo(full_df)
     
     # Calculate Points Diff
-    full_df['points_difference'] = full_df['home_points_last_5'] - full_df['away_points_last_5']
+    full_df['points_difference'] = full_df['home_points_last_10'] - full_df['away_points_last_10']
 
     print("✅ Feature engineering complete!")
 

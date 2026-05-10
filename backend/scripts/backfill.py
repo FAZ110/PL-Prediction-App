@@ -43,7 +43,7 @@ def backfill_league(league_code: str):
     full_df = calculate_rolling_stats(full_df)
     print("⚙️ Obliczanie Elo...")
     full_df = update_elo(full_df)
-    full_df['points_difference'] = full_df['home_points_last_5'] - full_df['away_points_last_5']
+    full_df['points_difference'] = full_df['home_points_last_10'] - full_df['away_points_last_10']
     full_df['league'] = league_code
 
     with engine.begin() as conn:

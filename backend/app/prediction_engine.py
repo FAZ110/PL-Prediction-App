@@ -177,23 +177,20 @@ def predict_match_optimized(model, home_team, away_team, df_history, le, feature
     h_stats = get_stats(home, last_n_h, games_h)
     a_stats = get_stats(away, last_n_a, games_a)
 
-    # 4. Construct Data Row
-    # NOTE: We keep the keys as '..._last_5' because that is what the Model expects 
-    # (based on the training column names), even though the VALUES are now from 10 games.
     data = {
         'HomeTeamCode': h_code, 'AwayTeamCode': a_code,
         'HomeElo': h_stats['elo'], 'AwayElo': a_stats['elo'],
         'EloDifference': h_stats['elo'] - a_stats['elo'],
-        
-        'home_wins_last_5': h_stats['wins'], 'home_draws_last_5': h_stats['draws'], 'home_losses_last_5': h_stats['losses'],
-        'away_wins_last_5': a_stats['wins'], 'away_draws_last_5': a_stats['draws'], 'away_losses_last_5': a_stats['losses'],
-        
+
+        'home_wins_last_10': h_stats['wins'], 'home_draws_last_10': h_stats['draws'], 'home_losses_last_10': h_stats['losses'],
+        'away_wins_last_10': a_stats['wins'], 'away_draws_last_10': a_stats['draws'], 'away_losses_last_10': a_stats['losses'],
+
         'home_goals_scored_avg': h_stats['gs_avg'], 'home_goals_conceded_avg': h_stats['gc_avg'],
         'away_goals_scored_avg': a_stats['gs_avg'], 'away_goals_conceded_avg': a_stats['gc_avg'],
-        
-        'home_points_last_5': h_stats['pts'], 'away_points_last_5': a_stats['pts'],
+
+        'home_points_last_10': h_stats['pts'], 'away_points_last_10': a_stats['pts'],
         'PointsDifference': h_stats['pts'] - a_stats['pts'],
-        
+
         'home_sot_avg': h_stats['sot_avg'],
         'home_corners_avg': h_stats['corners_avg'],
         'away_sot_avg': a_stats['sot_avg'],
