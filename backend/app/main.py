@@ -238,3 +238,13 @@ def get_standings(league: str = 'PL'):
             "goalDifference": team['goalDifference']
         })
     return standings
+
+
+@app.get("/teams")
+def get_teams(league: str = 'PL'):
+    with engine.connect() as conn:
+        rows = conn.execute(
+            text("SELECT DISTINCT home_team FROM matches WHERE league=:l ORDER BY home_team"),
+            {"l": league}
+        ).fetchall()
+    return [r[0] for r in rows]
