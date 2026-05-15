@@ -9,13 +9,20 @@ from dotenv import load_dotenv
 from sqlalchemy import text
 import pickle
 
-from .database import engine
+from .database import engine, Base
 from .prediction_engine import predict_match_optimized
 from .leagues import LEAGUES
+from .auth_router import router as auth_router
+from . import auth_models  # rejestruje tabele User i UserPrediction w Base
+from .seed import seed_users
 
 load_dotenv()
 
 app = FastAPI()
+
+Base.metadata.create_all(bind=engine)
+seed_users()
+app.include_router(auth_router)
 
 API_KEY = os.getenv("API_KEY")
 BASE_URL = "https://api.football-data.org/v4"

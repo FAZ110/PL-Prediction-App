@@ -1,0 +1,142 @@
+import { useEffect, useRef, useState } from 'react'
+import { NavLink, Link, useNavigate } from 'react-router-dom'
+import { ChevronDownIcon, UserIcon, LogOutIcon, SunIcon, MoonIcon } from 'lucide-react'
+import { useAuthStore } from '@/store/authStore'
+import { Button } from '@/components/ui/button'
+
+const useTheme = () => {
+    const [dark, setDark] = useState(() => {
+        if (typeof window === 'undefined') return false
+        return localStorage.getItem('theme') === 'dark' ||
+            (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    })
+
+    useEffect(() => {
+        document.documentElement.classList.toggle('dark', dark)
+        localStorage.setItem('theme', dark ? 'dark' : 'light')
+    }, [dark])
+
+    return { dark, toggle: () => setDark(d => !d) }
+}
+
+const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+    [
+        'relative px-1 py-4 text-sm font-medium transition-colors duration-200',
+        'after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:origin-left after:transition-transform after:duration-200',
+        isActive
+            ? 'text-foreground after:bg-primary after:scale-x-100'
+            : 'text-muted-foreground hover:text-foreground after:bg-primary after:scale-x-0 hover:after:scale-x-100',
+    ].join(' ')
+
+export const Navbar = () => {
+    const { user, logout } = useAuthStore()
+    const navigate = useNavigate()
+    const { dark, toggle } = useTheme()
+    const [open, setOpen] = useState(false)
+    const dropdownRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setOpen(false)
+            }
+        }
+        document.addEventListener('mousedown', handler)
+        return () => document.removeEventListener('mousedown', handler)
+    }, [])
+
+    const handleLogout = () => {
+        setOpen(false)
+        logout()
+        navigate('/')
+    }
+
+    const initial = user?.username?.[0]?.toUpperCase() ?? '?'
+
+    return (
+        <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-sm">
+            <div className="container mx-auto flex h-14 items-center justify-between px-4">
+
+                {/* Logo */}
+                <Link
+                    to="/"
+                    className="group flex items-center gap-2 text-lg font-bold"
+                >
+                    <span className="transition-transform duration-300 group-hover:rotate-12 inline-block">
+                        ⚽
+                    </span>
+                    <span>Football Predictor</span>
+                </Link>
+
+                {/* Nav links */}
+                <nav className="flex items-center gap-6">
+                    <NavLink to="/" end className={navLinkClass}>Home</NavLink>
+                    <NavLink to="/predict" className={navLinkClass}>Prediction Lab</NavLink>
+                </nav>
+
+                {/* Right side */}
+                <div className="flex items-center gap-2">
+                    {/* Dark mode toggle */}
+                    <button
+                        onClick={toggle}
+                        className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                        aria-label="Toggle theme"
+                    >
+                        <span className={`transition-transform duration-300 ${dark ? 'rotate-0' : 'rotate-180'}`}>
+                            {dark ? <SunIcon className="size-4" /> : <MoonIcon className="size-4" />}
+                        </span>
+                    </button>
+
+                    {user ? (
+                        /* User dropdown */
+                        <div ref={dropdownRef} className="relative">
+                            <button
+                                onClick={() => setOpen(o => !o)}
+                                className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent"
+                            >
+                                <div className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                                    {initial}
+                                </div>
+                                <span className="max-w-25 truncate font-medium">{user.username}</span>
+                                <ChevronDownIcon
+                                    className={`size-3.5 text-muted-foreground transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+                                />
+                            </button>
+
+                            {/* Dropdown panel */}
+                            <div className={[
+                                'absolute right-0 top-full mt-1 w-44 rounded-lg border bg-popover p-1 shadow-md',
+                                'transition-all duration-200 origin-top-right',
+                                open ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none',
+                            ].join(' ')}>
+                                <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                                    {user.email}
+                                </div>
+                                <div className="my-1 h-px bg-border" />
+                                <Link
+                                    to="/profile"
+                                    onClick={() => setOpen(false)}
+                                    className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent"
+                                >
+                                    <UserIcon className="size-3.5" />
+                                    Profile
+                                </Link>
+                                <button
+                                    onClick={handleLogout}
+                                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-destructive transition-colors hover:bg-destructive/10"
+                                >
+                                    <LogOutIcon className="size-3.5" />
+                                    Logout
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <Button asChild size="sm">
+                            <Link to="/login">Sign in</Link>
+                        </Button>
+                    )}
+                </div>
+            </div>
+        </header>
+    )
+}

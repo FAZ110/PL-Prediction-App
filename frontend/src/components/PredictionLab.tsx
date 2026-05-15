@@ -60,7 +60,7 @@ export const PredictionLab = ({ league, initialHome, initialAway, autoPredict }:
                         <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select home team" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent position="popper" className='bg-white'>
                             {teams?.map(team => (
                                 <SelectItem key={team} value={team}>{team}</SelectItem>
                             ))}
@@ -74,7 +74,7 @@ export const PredictionLab = ({ league, initialHome, initialAway, autoPredict }:
                         <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select away team" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent position="popper" className='bg-white'>
                             {teams?.map(team => (
                                 <SelectItem key={team} value={team}>{team}</SelectItem>
                             ))}
