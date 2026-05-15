@@ -109,7 +109,6 @@ if 'PL' not in MODELS:
         print("WARNING: No PL model found (DB or .pkl). /predict will fail for PL.")
 
 
-# --- SCHEMAS ---
 
 class MatchPredictionRequest(BaseModel):
     home_team: str
@@ -117,7 +116,6 @@ class MatchPredictionRequest(BaseModel):
     league: str = 'PL'
 
 
-# --- ENDPOINTS ---
 
 @app.get("/")
 def home():

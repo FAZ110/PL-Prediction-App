@@ -3,7 +3,7 @@ import { useLeagueStore } from '@/store/leagueStore'
 import type { League } from '@/types'
 
 const LEAGUES: { id: League; label: string; flag: string }[] = [
-    { id: 'PL',  label: 'Premier League', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+    { id: 'PL',  label: 'Premier League', flag: '🏴󠁧󠁢󠁥󠁮󠁧' },
     { id: 'PD',  label: 'La Liga',         flag: '🇪🇸' },
     { id: 'BL1', label: 'Bundesliga',      flag: '🇩🇪' },
     { id: 'SA',  label: 'Serie A',         flag: '🇮🇹' },
