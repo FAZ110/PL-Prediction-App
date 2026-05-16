@@ -4,9 +4,9 @@ from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy.orm import Session
 
-from .database import get_db
-from .auth_models import User
-from .auth import hash_password, verify_password, create_access_token, get_current_user
+from ..core.database import get_db
+from ..models.user import User
+from .service import hash_password, verify_password, create_access_token, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

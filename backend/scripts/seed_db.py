@@ -1,7 +1,7 @@
 import pandas as pd
 import os
-from backend.app.database import engine, Base
-from backend.app.models import Match
+from backend.app.core.database import engine, Base
+from backend.app.models.match import Match
 
 # Maps CSV Header -> Database Column Name
 column_mapping = {

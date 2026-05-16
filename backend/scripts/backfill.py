@@ -3,8 +3,8 @@ import pandas as pd
 from sqlalchemy import text
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from app.database import engine
-from app.leagues import LEAGUES
+from app.core.database import engine
+from app.core.leagues import LEAGUES
 from scripts.daily_job import calculate_rolling_stats, update_elo
 
 def backfill_league(league_code: str):

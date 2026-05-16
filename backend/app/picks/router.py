@@ -1,3 +1,4 @@
+import os
 from collections import defaultdict
 from datetime import datetime
 from typing import Optional
@@ -7,11 +8,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from .auth import get_current_user
-from .auth_models import User, UserPick
-from .database import get_db
-from .leagues import LEAGUES
-import os
+from ..auth.service import get_current_user
+from ..models.user import User, UserPick
+from ..core.database import get_db
+from ..core.leagues import LEAGUES
 
 router = APIRouter(prefix="/picks", tags=["picks"])
 

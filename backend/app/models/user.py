@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean
-from .database import Base
+from ..core.database import Base
 
 
 class User(Base):
@@ -41,4 +41,3 @@ class UserPick(Base):
     actual_result    = Column(String(1), nullable=True)    # set after match finishes
     is_correct       = Column(Boolean, nullable=True)
     created_at       = Column(DateTime, default=datetime.utcnow)
-

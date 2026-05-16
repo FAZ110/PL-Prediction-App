@@ -9,12 +9,11 @@ from dotenv import load_dotenv
 from sqlalchemy import text
 import pickle
 
-from .database import engine, Base
-from .prediction_engine import predict_match_optimized
-from .leagues import LEAGUES
-from .auth_router import router as auth_router
-from .picks_router import router as picks_router
-from . import auth_models  # rejestruje tabele w Base
+from .core.database import engine, Base
+from .prediction.engine import predict_match_optimized
+from .core.leagues import LEAGUES
+from .auth.router import router as auth_router
+from .picks.router import router as picks_router
 from .seed import seed_users
 
 load_dotenv()

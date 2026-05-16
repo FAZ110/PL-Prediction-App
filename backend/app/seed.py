@@ -1,6 +1,6 @@
-from .database import SessionLocal
-from .auth_models import User
-from .auth import hash_password
+from .core.database import SessionLocal
+from .models.user import User
+from .auth.service import hash_password
 
 SEED_USERS = [
     {"email": "admin@football.local", "username": "admin",  "password": "Admin1234!"},

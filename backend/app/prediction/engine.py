@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
 
+
 def predict_match_optimized(model, home_team, away_team, df_history, le, feature_columns, league='PL'):
-    # 1. Team Name Standardization
     name_maps = {
     'PL': {
         'Arsenal': 'Arsenal',
@@ -20,7 +20,7 @@ def predict_match_optimized(model, home_team, away_team, df_history, le, feature
         'Manchester City': 'Man City', 'Man City': 'Man City',
         'Manchester United': 'Man United', 'Man Utd': 'Man United', 'Man United': 'Man United',
         'Newcastle United': 'Newcastle', 'Newcastle': 'Newcastle',
-        'Nottingham Forest': "Nott'm Forest", 'Nottm Forest': "Nott'm Forest", "Nott'm Forest": "Nott'm Forest", 'Forest': "Nott'm Forest", "Nottingham": "Nott'm Forest" ,
+        'Nottingham Forest': "Nott'm Forest", 'Nottm Forest': "Nott'm Forest", "Nott'm Forest": "Nott'm Forest", 'Forest': "Nott'm Forest", "Nottingham": "Nott'm Forest",
         'Sunderland': 'Sunderland',
         'Tottenham Hotspur': 'Tottenham', 'Spurs': 'Tottenham', 'Tottenham': 'Tottenham',
         'West Ham United': 'West Ham', 'West Ham': 'West Ham',
@@ -114,7 +114,7 @@ def predict_match_optimized(model, home_team, away_team, df_history, le, feature
     name_map = name_maps.get(league, name_maps['PL'])
     home = name_map.get(home_team, home_team)
     away = name_map.get(away_team, away_team)
-    
+
     try:
         h_code = le.transform([home])[0]
         a_code = le.transform([away])[0]
@@ -122,14 +122,14 @@ def predict_match_optimized(model, home_team, away_team, df_history, le, feature
         print(f" Error: Team not found ({home} or {away}): {e}")
         return None
 
-    N_MATCHES = 10 
-    
+    N_MATCHES = 10
+
     games_h = df_history[(df_history['HomeTeam'] == home) | (df_history['AwayTeam'] == home)].sort_values('Date')
     last_n_h = games_h.tail(N_MATCHES)
-    
+
     games_a = df_history[(df_history['HomeTeam'] == away) | (df_history['AwayTeam'] == away)].sort_values('Date')
     last_n_a = games_a.tail(N_MATCHES)
-    
+
     if last_n_h.empty or last_n_a.empty:
         return None
 
@@ -137,41 +137,40 @@ def predict_match_optimized(model, home_team, away_team, df_history, le, feature
         pts, wins, draws, losses = 0, 0, 0, 0
         gs, gc = 0, 0
         sot, corners = 0, 0
-        
-        count = len(last_games) 
+
+        count = len(last_games)
         if count == 0: count = 1
 
         for _, row in last_games.iterrows():
             is_home = row['HomeTeam'] == team
-            
+
             goals_for = row['FTHG'] if is_home else row['FTAG']
             goals_against = row['FTAG'] if is_home else row['FTHG']
             result = row['FTR']
-            
-            # New Stats
+
             current_sot = row['HST'] if is_home else row['AST']
             current_corners = row['HC'] if is_home else row['AC']
-            
+
             gs += goals_for
             gc += goals_against
             sot += current_sot
             corners += current_corners
-            
+
             if result == 'D':
                 pts += 1; draws += 1
             elif (is_home and result == 'H') or (not is_home and result == 'A'):
                 pts += 3; wins += 1
             else:
                 losses += 1
-        
+
         last_game = all_games.iloc[-1]
         elo = last_game['HomeElo'] if last_game['HomeTeam'] == team else last_game['AwayElo']
-        
+
         return {
             'elo': elo, 'wins': wins, 'draws': draws, 'losses': losses,
             'pts': pts,
             'gs_avg': gs / count, 'gc_avg': gc / count,
-            'sot_avg': sot / count, 
+            'sot_avg': sot / count,
             'corners_avg': corners / count
         }
 
@@ -197,13 +196,12 @@ def predict_match_optimized(model, home_team, away_team, df_history, le, feature
         'away_sot_avg': a_stats['sot_avg'],
         'away_corners_avg': a_stats['corners_avg']
     }
-    
+
     input_df = pd.DataFrame([data])
     input_df = input_df.reindex(columns=feature_columns, fill_value=0)
-    
-    # 5. Predict
+
     probs = model.predict_proba(input_df)[0]
     outcomes = ["Away Win", "Draw", "Home Win"]
     winner = outcomes[np.argmax(probs)]
-    
+
     return winner, probs, h_stats, a_stats

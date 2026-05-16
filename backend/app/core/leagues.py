@@ -2,7 +2,7 @@ LEAGUES = {
     'PL': {
         'name': 'Premier League',
         'flag': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
-        'competition_code': 'PL',        
+        'competition_code': 'PL',
         'csv_seasons': {
             '2015-16': 'https://www.football-data.co.uk/mmz4281/1516/E0.csv',
             '2016-17': 'https://www.football-data.co.uk/mmz4281/1617/E0.csv',

@@ -6,12 +6,12 @@ from sqlalchemy import text
 from datetime import datetime
 import requests
 from dotenv import load_dotenv
-from app.leagues import LEAGUES
+from app.core.leagues import LEAGUES
 
 # --- PATH SETUP ---
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
-from app.database import engine
+from app.core.database import engine
 
 CSV_URL = "https://www.football-data.co.uk/mmz4281/2526/E0.csv"
 

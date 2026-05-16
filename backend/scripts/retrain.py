@@ -7,12 +7,10 @@ import xgboost as xgb
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score
 from sqlalchemy import text
-from app.leagues import LEAGUES
-
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.database import engine
+from app.core.leagues import LEAGUES
+from app.core.database import engine
 
 def retrain_model(league_code: str = 'PL'):
     print("Starting Model Retraining... ")

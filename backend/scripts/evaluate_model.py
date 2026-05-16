@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 # --- PATH SETUP ---
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from app.database import engine
+from app.core.database import engine
 
 def check_model_accuracy():
     print("⏳ Connecting to Database...")
