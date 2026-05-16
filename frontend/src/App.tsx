@@ -11,6 +11,7 @@ import { LoginPage } from '@/pages/LoginPage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+import { PicksPage } from '@/pages/PicksPage'
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -41,17 +42,23 @@ const router = createBrowserRouter([
         path: '/',
         element: <Layout />,
         children: [
-            { index: true, element: <Home /> },
-            { path: 'predict', element: <PredictPage /> },
             { path: 'login', element: <LoginPage /> },
             { path: 'register', element: <RegisterPage /> },
             {
+                index: true,
+                element: <ProtectedRoute><Home /></ProtectedRoute>,
+            },
+            {
+                path: 'predict',
+                element: <ProtectedRoute><PredictPage /></ProtectedRoute>,
+            },
+            {
                 path: 'profile',
-                element: (
-                    <ProtectedRoute>
-                        <ProfilePage />
-                    </ProtectedRoute>
-                ),
+                element: <ProtectedRoute><ProfilePage /></ProtectedRoute>,
+            },
+            {
+                path: 'picks',
+                element: <ProtectedRoute><PicksPage /></ProtectedRoute>,
             },
             { path: '*', element: <NotFoundPage /> },
         ],

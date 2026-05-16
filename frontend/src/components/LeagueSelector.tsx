@@ -19,6 +19,7 @@ export const LeagueSelector = () => {
                     key={id}
                     variant={selectedLeague === id ? 'default' : 'outline'}
                     onClick={() => setLeague(id)}
+                    className='cursor-pointer'
                 >
                     <span>{flag}</span>
                     {label}

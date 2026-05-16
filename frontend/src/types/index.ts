@@ -57,3 +57,29 @@ export interface AuthResponse {
     access_token: string
     token_type: string
 }
+
+export type PickChoice = 'H' | 'D' | 'A'
+
+export interface UserPick {
+    id: number
+    home_team: string
+    away_team: string
+    league: string
+    match_date: string
+    user_pick: PickChoice
+    model_prediction: string | null
+    model_confidence: number | null
+    actual_result: PickChoice | null
+    is_correct: boolean | null
+    created_at: string
+}
+
+export interface PickCreate {
+    home_team: string
+    away_team: string
+    league: string
+    match_date: string
+    user_pick: PickChoice
+    model_prediction?: string
+    model_confidence?: number
+}
