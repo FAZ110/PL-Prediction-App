@@ -95,6 +95,15 @@ def _resolve_pending(user_id: int, db: Session) -> None:
     db.commit()
 
 
+class PickStats(BaseModel):
+    total: int
+    resolved: int
+    correct: int
+    accuracy: float
+    current_streak: int
+    best_streak: int
+
+
 def _pick_to_out(p: UserPick) -> PickOut:
     return PickOut(
         id=p.id,
@@ -108,6 +117,42 @@ def _pick_to_out(p: UserPick) -> PickOut:
         actual_result=p.actual_result,
         is_correct=p.is_correct,
         created_at=p.created_at.isoformat(),
+    )
+
+
+@router.get("/stats", response_model=PickStats)
+def get_pick_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    picks = (
+        db.query(UserPick)
+        .filter(UserPick.user_id == current_user.id)
+        .order_by(UserPick.created_at.asc())
+        .all()
+    )
+    resolved = [p for p in picks if p.actual_result is not None]
+    correct_count = sum(1 for p in resolved if p.is_correct)
+
+    current_streak = 0
+    for p in reversed(resolved):
+        if p.is_correct:
+            current_streak += 1
+        else:
+            break
+
+    best, run = 0, 0
+    for p in resolved:
+        run = run + 1 if p.is_correct else 0
+        best = max(best, run)
+
+    return PickStats(
+        total=len(picks),
+        resolved=len(resolved),
+        correct=correct_count,
+        accuracy=correct_count / len(resolved) if resolved else 0.0,
+        current_streak=current_streak,
+        best_streak=best,
     )
 
 

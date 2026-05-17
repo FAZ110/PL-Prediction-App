@@ -3,8 +3,9 @@ import { useTeams } from '@/hooks/useTeams'
 import { usePredict } from '@/hooks/usePredict'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import { Select, SelectTrigger, SelectContent, SelectItem } from '@/components/ui/select'
 import type { League } from '@/types'
+import { displayTeam } from '@/lib/teamNames'
 
 interface PredictionLabProps {
     league: League
@@ -58,11 +59,13 @@ export const PredictionLab = ({ league, initialHome, initialAway, autoPredict }:
                     <label className="text-xs text-muted-foreground">Home team</label>
                     <Select value={home} onValueChange={setHome}>
                         <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select home team" />
+                            <span className={!home ? 'text-muted-foreground' : ''}>
+                                {home ? displayTeam(home) : 'Select home team'}
+                            </span>
                         </SelectTrigger>
                         <SelectContent position="popper" className="bg-popover text-popover-foreground">
                             {teams?.map(team => (
-                                <SelectItem key={team} value={team}>{team}</SelectItem>
+                                <SelectItem key={team} value={team}>{displayTeam(team)}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
@@ -72,11 +75,13 @@ export const PredictionLab = ({ league, initialHome, initialAway, autoPredict }:
                     <label className="text-xs text-muted-foreground">Away team</label>
                     <Select value={away} onValueChange={setAway}>
                         <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select away team" />
+                            <span className={!away ? 'text-muted-foreground' : ''}>
+                                {away ? displayTeam(away) : 'Select away team'}
+                            </span>
                         </SelectTrigger>
                         <SelectContent position="popper" className="bg-popover text-popover-foreground">
                             {teams?.map(team => (
-                                <SelectItem key={team} value={team}>{team}</SelectItem>
+                                <SelectItem key={team} value={team}>{displayTeam(team)}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>

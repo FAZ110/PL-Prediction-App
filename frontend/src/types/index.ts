@@ -74,6 +74,15 @@ export interface UserPick {
     created_at: string
 }
 
+export interface PickStats {
+    total: number
+    resolved: number
+    correct: number
+    accuracy: number
+    current_streak: number
+    best_streak: number
+}
+
 export interface PickCreate {
     home_team: string
     away_team: string

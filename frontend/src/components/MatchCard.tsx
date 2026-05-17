@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { usePredict } from '@/hooks/usePredict'
 import type { UpcomingMatch, League } from '@/types'
+import { displayTeam } from '@/lib/teamNames'
 
 const LEAGUE_LABELS: Record<string, string> = {
     PL:  'Premier League',
@@ -43,9 +44,9 @@ export const MatchCard = ({ match, league }: MatchCardProps) => {
                 </div>
 
                 <div className="flex items-center justify-between gap-2 text-sm font-medium">
-                    <span className="flex-1 text-right">{match.homeTeam}</span>
+                    <span className="flex-1 text-right">{displayTeam(match.homeTeam)}</span>
                     <span className="shrink-0 rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">vs</span>
-                    <span className="flex-1 text-left">{match.awayTeam}</span>
+                    <span className="flex-1 text-left">{displayTeam(match.awayTeam)}</span>
                 </div>
 
                 <div className="flex items-center justify-between">

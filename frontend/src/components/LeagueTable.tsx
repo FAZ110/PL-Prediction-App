@@ -2,6 +2,7 @@ import { useStandings } from "@/hooks/useStandings"
 import { useLeagueStore } from "@/store/leagueStore"
 import { LoadingSpinner } from "./LoadingSpinner"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
+import { displayTeam } from '@/lib/teamNames'
 
 type Zone = 'champions' | 'europa' | 'conference' | 'relegation' | 'none'
 
@@ -59,7 +60,7 @@ export const LeagueTable = () => {
                             <TableCell className={`text-center text-muted-foreground ${CELL_BORDER[zone]}`}>
                                 {team.position}
                             </TableCell>
-                            <TableCell className="font-medium">{team.name}</TableCell>
+                            <TableCell className="font-medium">{displayTeam(team.name)}</TableCell>
                             <TableCell className="text-center">{team.played}</TableCell>
                             <TableCell className="text-center">{team.won}</TableCell>
                             <TableCell className="text-center">{team.draw}</TableCell>

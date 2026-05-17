@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { UpcomingMatch, Standing, PredictionResponse, User, AuthResponse, UserPick, PickCreate } from '@/types'
+import type { UpcomingMatch, Standing, PredictionResponse, User, AuthResponse, UserPick, PickCreate, PickStats } from '@/types'
 
 const http = axios.create({
     baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:8000',
@@ -62,4 +62,7 @@ export const api = {
 
     submitPick: (pick: PickCreate) =>
         http.post<UserPick>('/picks', pick).then(r => r.data),
+
+    getPickStats: () =>
+        http.get<PickStats>('/picks/stats').then(r => r.data),
 }

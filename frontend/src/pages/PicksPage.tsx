@@ -7,6 +7,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { PickChoice, UserPick } from '@/types'
+import { displayTeam } from '@/lib/teamNames'
 
 const PICK_LABEL: Record<PickChoice, string> = { H: 'Home', D: 'Draw', A: 'Away' }
 
@@ -35,7 +36,7 @@ const CorrectBadge = ({ value }: { value: boolean | null }) => {
 const PickHistoryRow = ({ pick }: { pick: UserPick }) => (
     <div className="flex flex-col gap-1 rounded-lg border bg-card p-3 text-sm">
         <div className="flex items-center justify-between">
-            <span className="font-medium">{pick.home_team} vs {pick.away_team}</span>
+            <span className="font-medium">{displayTeam(pick.home_team)} vs {displayTeam(pick.away_team)}</span>
             <span className="text-xs text-muted-foreground">{pick.league}</span>
         </div>
         <span className="text-xs text-muted-foreground">{formatDate(pick.match_date)}</span>
@@ -112,7 +113,7 @@ export const PicksPage = () => {
                             <div key={key} className="flex flex-col gap-2 rounded-lg border bg-card p-3">
                                 <div className="flex items-center justify-between flex-wrap gap-2">
                                     <div>
-                                        <span className="font-medium">{match.homeTeam} vs {match.awayTeam}</span>
+                                        <span className="font-medium">{displayTeam(match.homeTeam)} vs {displayTeam(match.awayTeam)}</span>
                                         <span className="ml-2 text-xs text-muted-foreground">{formatDate(match.date)}</span>
                                     </div>
                                     {existing && (
