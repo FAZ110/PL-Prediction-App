@@ -2,7 +2,6 @@ from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import requests
-import joblib
 import pandas as pd
 import os
 from dotenv import load_dotenv
@@ -110,15 +109,8 @@ for _league in LEAGUES:
         MODELS[_league] = (_model, _le)
     DF_HISTORY[_league] = load_data(_league)
 
-# Fallback na pliki .pkl tylko dla PL
 if 'PL' not in MODELS:
-    try:
-        _m = joblib.load(os.path.join(BASE_DIR, "..", "ml_artifacts", "football_model_final.pkl"))
-        _le = joblib.load(os.path.join(BASE_DIR, "..", "ml_artifacts", "team_encoders.pkl"))
-        MODELS['PL'] = (_m, _le)
-        print("✅ PL fallback model loaded from .pkl files")
-    except FileNotFoundError:
-        print("WARNING: No PL model found (DB or .pkl). /predict will fail for PL.")
+    print("WARNING: No PL model found in DB. /predict will fail for PL. Run retrain first.")
 
 
 
