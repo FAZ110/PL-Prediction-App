@@ -21,11 +21,11 @@ def seed_users() -> None:
                 hashed_password=hash_password(u["password"]),
             ))
         db.commit()
-        print("✅ Seed: created default accounts")
+        print(" Seed: created default accounts")
         for u in SEED_USERS:
             print(f"   {u['email']}  /  {u['password']}  (username: {u['username']})")
     except Exception as e:
         db.rollback()
-        print(f"⚠️ Seed failed: {e}")
+        print(f" Seed failed: {e}")
     finally:
         db.close()

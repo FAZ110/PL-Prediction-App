@@ -53,7 +53,7 @@ def predict_match_optimized(model, home_team, away_team, df_history, le, feature
         'Granada': 'Granada',
         'Levante': 'Levante',
         'Valladolid': 'Valladolid',
-        'Oviedo': 'Oviedo',
+        'Oviedo': 'Oviedo', 'Real Oviedo': 'Oviedo',
     },
     'BL1': {
         'Bayern Munich': 'Bayern Munich', 'Bayern': 'Bayern Munich',
