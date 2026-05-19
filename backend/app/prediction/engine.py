@@ -130,6 +130,10 @@ def predict_match_optimized(model, home_team, away_team, df_history, le, feature
     games_a = df_history[(df_history['HomeTeam'] == away) | (df_history['AwayTeam'] == away)].sort_values('Date')
     last_n_a = games_a.tail(N_MATCHES)
 
+    # Venue-specific last 5: home team's home games, away team's away games
+    home_as_home = df_history[df_history['HomeTeam'] == home].sort_values('Date').tail(5)
+    away_as_away = df_history[df_history['AwayTeam'] == away].sort_values('Date').tail(5)
+
     if last_n_h.empty or last_n_a.empty:
         return None
 
@@ -177,6 +181,46 @@ def predict_match_optimized(model, home_team, away_team, df_history, le, feature
     h_stats = get_stats(home, last_n_h, games_h)
     a_stats = get_stats(away, last_n_a, games_a)
 
+    def get_venue_stats(games, is_home):
+        wins, gs, gc = 0, 0, 0
+        count = len(games)
+        if count == 0:
+            return {'wins': 0, 'goals_avg': 0.0, 'conceded_avg': 0.0}
+        for _, row in games.iterrows():
+            result = row['FTR']
+            if is_home:
+                win = result == 'H'
+                gs += row['FTHG']
+                gc += row['FTAG']
+            else:
+                win = result == 'A'
+                gs += row['FTAG']
+                gc += row['FTHG']
+            if win:
+                wins += 1
+        return {'wins': wins, 'goals_avg': gs / count, 'conceded_avg': gc / count}
+
+    h_venue = get_venue_stats(home_as_home, is_home=True)
+    a_venue = get_venue_stats(away_as_away, is_home=False)
+
+    # Head-to-head last 5 meetings (either venue)
+    h2h_games = df_history[
+        ((df_history['HomeTeam'] == home) & (df_history['AwayTeam'] == away)) |
+        ((df_history['HomeTeam'] == away) & (df_history['AwayTeam'] == home))
+    ].sort_values('Date').tail(5)
+
+    h2h_home_wins, h2h_draws = 0, 0
+    h2h_home_goals_list, h2h_away_goals_list = [], []
+    for _, row in h2h_games.iterrows():
+        is_home = row['HomeTeam'] == home
+        result = row['FTR']
+        if result == 'D':
+            h2h_draws += 1
+        elif (is_home and result == 'H') or (not is_home and result == 'A'):
+            h2h_home_wins += 1
+        h2h_home_goals_list.append(row['FTHG'] if is_home else row['FTAG'])
+        h2h_away_goals_list.append(row['FTAG'] if is_home else row['FTHG'])
+
     data = {
         'HomeTeamCode': h_code, 'AwayTeamCode': a_code,
         'HomeElo': h_stats['elo'], 'AwayElo': a_stats['elo'],
@@ -194,7 +238,19 @@ def predict_match_optimized(model, home_team, away_team, df_history, le, feature
         'home_sot_avg': h_stats['sot_avg'],
         'home_corners_avg': h_stats['corners_avg'],
         'away_sot_avg': a_stats['sot_avg'],
-        'away_corners_avg': a_stats['corners_avg']
+        'away_corners_avg': a_stats['corners_avg'],
+
+        'home_wins_home_last_5': h_venue['wins'],
+        'home_goals_home_avg': h_venue['goals_avg'],
+        'home_conceded_home_avg': h_venue['conceded_avg'],
+        'away_wins_away_last_5': a_venue['wins'],
+        'away_goals_away_avg': a_venue['goals_avg'],
+        'away_conceded_away_avg': a_venue['conceded_avg'],
+
+        'h2h_home_wins_last_5': h2h_home_wins,
+        'h2h_draws_last_5': h2h_draws,
+        'h2h_home_goals_avg': np.mean(h2h_home_goals_list) if h2h_home_goals_list else 0.0,
+        'h2h_away_goals_avg': np.mean(h2h_away_goals_list) if h2h_away_goals_list else 0.0,
     }
 
     input_df = pd.DataFrame([data])

@@ -29,22 +29,31 @@ def calculate_rolling_stats(df):
         'away_goals_scored_avg', 'away_goals_conceded_avg',
         'home_points_last_10', 'away_points_last_10',
         'home_sot_avg', 'home_corners_avg',
-        'away_sot_avg', 'away_corners_avg'
+        'away_sot_avg', 'away_corners_avg',
+        'home_wins_home_last_5', 'home_goals_home_avg', 'home_conceded_home_avg',
+        'away_wins_away_last_5', 'away_goals_away_avg', 'away_conceded_away_avg',
+        'h2h_home_wins_last_5', 'h2h_draws_last_5',
+        'h2h_home_goals_avg', 'h2h_away_goals_avg',
     ]
     
     for col in cols_to_init:
         df[col] = 0.0
 
-    # We need a dictionary to track team history
+    # Dictionaries to track team history (all games, home-venue only, away-venue only, H2H pairs)
     team_stats = {}
+    home_venue_stats = {}
+    away_venue_stats = {}
+    h2h_stats = {}  # key: tuple(sorted([home, away]))
 
     for index, row in df.iterrows():
         home = row['home_team']
         away = row['away_team']
-        
+
         # Initialize team if new
         if home not in team_stats: team_stats[home] = []
         if away not in team_stats: team_stats[away] = []
+        if home not in home_venue_stats: home_venue_stats[home] = []
+        if away not in away_venue_stats: away_venue_stats[away] = []
         
         # --- 1. GET HISTORY FOR HOME TEAM ---
         history = team_stats[home]
@@ -76,7 +85,33 @@ def calculate_rolling_stats(df):
             df.at[index, 'away_sot_avg'] = np.mean([m['sot'] for m in last_10])
             df.at[index, 'away_corners_avg'] = np.mean([m['corners'] for m in last_10])
 
-        # --- 3. UPDATE HISTORY AFTER MATCH ---
+        # --- 3. VENUE-SPECIFIC FORM (home team at home, away team away) ---
+        last_5_hh = home_venue_stats[home][-5:]
+        if last_5_hh:
+            df.at[index, 'home_wins_home_last_5'] = sum(1 for m in last_5_hh if m['result'] == 'W')
+            df.at[index, 'home_goals_home_avg'] = np.mean([m['goals_for'] for m in last_5_hh])
+            df.at[index, 'home_conceded_home_avg'] = np.mean([m['goals_against'] for m in last_5_hh])
+
+        last_5_aa = away_venue_stats[away][-5:]
+        if last_5_aa:
+            df.at[index, 'away_wins_away_last_5'] = sum(1 for m in last_5_aa if m['result'] == 'W')
+            df.at[index, 'away_goals_away_avg'] = np.mean([m['goals_for'] for m in last_5_aa])
+            df.at[index, 'away_conceded_away_avg'] = np.mean([m['goals_against'] for m in last_5_aa])
+
+        # --- 4. HEAD-TO-HEAD FORM ---
+        pair = tuple(sorted([home, away]))
+        last_5_h2h = h2h_stats.get(pair, [])[-5:]
+        if last_5_h2h:
+            home_wins_h2h = sum(1 for m in last_5_h2h if m['winner'] == home)
+            draws_h2h = sum(1 for m in last_5_h2h if m['winner'] == 'D')
+            home_goals_h2h = [m['home_goals'] if m['home_team'] == home else m['away_goals'] for m in last_5_h2h]
+            away_goals_h2h = [m['away_goals'] if m['home_team'] == home else m['home_goals'] for m in last_5_h2h]
+            df.at[index, 'h2h_home_wins_last_5'] = home_wins_h2h
+            df.at[index, 'h2h_draws_last_5'] = draws_h2h
+            df.at[index, 'h2h_home_goals_avg'] = np.mean(home_goals_h2h)
+            df.at[index, 'h2h_away_goals_avg'] = np.mean(away_goals_h2h)
+
+        # --- 5. UPDATE HISTORY AFTER MATCH ---
         # Skip updating if match hasn't happened yet (Result is None)
         if pd.isna(row['fthg']) or pd.isna(row['ftr']):
             continue
@@ -100,7 +135,22 @@ def calculate_rolling_stats(df):
             'goals_for': row['ftag'], 'goals_against': row['fthg'],
             'sot': row['ast'], 'corners': row['ac']
         })
-        
+
+        # Venue-specific history updates
+        home_venue_stats[home].append({
+            'result': h_res, 'goals_for': row['fthg'], 'goals_against': row['ftag']
+        })
+        away_venue_stats[away].append({
+            'result': a_res, 'goals_for': row['ftag'], 'goals_against': row['fthg']
+        })
+
+        # H2H history update
+        winner = home if row['ftr'] == 'H' else (away if row['ftr'] == 'A' else 'D')
+        h2h_stats.setdefault(pair, []).append({
+            'winner': winner, 'home_team': home,
+            'home_goals': row['fthg'], 'away_goals': row['ftag'],
+        })
+
     return df
 
 def update_elo(df):

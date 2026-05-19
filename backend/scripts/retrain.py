@@ -51,7 +51,11 @@ def retrain_model(league_code: str = 'PL'):
         'home_points_last_10', 'away_points_last_10', 'PointsDifference',
         'HomeElo', 'AwayElo', 'EloDifference', 'HomeTeamCode', 'AwayTeamCode',
         'home_sot_avg', 'home_corners_avg',
-        'away_sot_avg', 'away_corners_avg'
+        'away_sot_avg', 'away_corners_avg',
+        'home_wins_home_last_5', 'home_goals_home_avg', 'home_conceded_home_avg',
+        'away_wins_away_last_5', 'away_goals_away_avg', 'away_conceded_away_avg',
+        'h2h_home_wins_last_5', 'h2h_draws_last_5',
+        'h2h_home_goals_avg', 'h2h_away_goals_avg',
     ]
     
     # Clean data & Remove "Ghost Matches"

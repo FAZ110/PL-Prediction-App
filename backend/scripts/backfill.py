@@ -46,7 +46,21 @@ def backfill_league(league_code: str):
     full_df['points_difference'] = full_df['home_points_last_10'] - full_df['away_points_last_10']
     full_df['league'] = league_code
 
+    new_columns = [
+        ('home_wins_home_last_5', 'FLOAT'),
+        ('home_goals_home_avg',   'FLOAT'),
+        ('home_conceded_home_avg','FLOAT'),
+        ('away_wins_away_last_5', 'FLOAT'),
+        ('away_goals_away_avg',   'FLOAT'),
+        ('away_conceded_away_avg','FLOAT'),
+        ('h2h_home_wins_last_5',  'FLOAT'),
+        ('h2h_draws_last_5',      'FLOAT'),
+        ('h2h_home_goals_avg',    'FLOAT'),
+        ('h2h_away_goals_avg',    'FLOAT'),
+    ]
     with engine.begin() as conn:
+        for col, dtype in new_columns:
+            conn.execute(text(f"ALTER TABLE matches ADD COLUMN IF NOT EXISTS {col} {dtype}"))
         conn.execute(text(f"DELETE FROM matches WHERE league = '{league_code}'"))
     full_df.to_sql('matches', engine, if_exists='append', index=False)
     print(f"✅ {league['name']}: {len(full_df)} meczów z cechami wgrano do bazy.")

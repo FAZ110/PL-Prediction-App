@@ -47,3 +47,15 @@ class Match(Base):
     home_corners_avg = Column(Float)
     away_sot_avg = Column(Float)
     away_corners_avg = Column(Float)
+
+    home_wins_home_last_5 = Column(Float)
+    home_goals_home_avg = Column(Float)
+    home_conceded_home_avg = Column(Float)
+    away_wins_away_last_5 = Column(Float)
+    away_goals_away_avg = Column(Float)
+    away_conceded_away_avg = Column(Float)
+
+    h2h_home_wins_last_5 = Column(Float)
+    h2h_draws_last_5 = Column(Float)
+    h2h_home_goals_avg = Column(Float)
+    h2h_away_goals_avg = Column(Float)
