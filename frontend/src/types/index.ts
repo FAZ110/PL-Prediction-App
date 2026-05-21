@@ -83,6 +83,17 @@ export interface PickStats {
     best_streak: number
 }
 
+export interface LeaderboardEntry {
+    rank: number
+    username: string
+    total_picks: number
+    correct: number
+    accuracy: number
+    best_streak: number
+}
+
+export type LeaderboardPeriod = 'all' | '7d' | '30d'
+
 export interface PickCreate {
     home_team: string
     away_team: string

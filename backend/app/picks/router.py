@@ -1,6 +1,6 @@
 import os
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 import requests
@@ -199,6 +199,63 @@ def submit_pick(
     db.commit()
     db.refresh(pick)
     return _pick_to_out(pick)
+
+
+class LeaderboardEntry(BaseModel):
+    rank: int
+    username: str
+    total_picks: int
+    correct: int
+    accuracy: float
+    best_streak: int
+
+
+@router.get("/leaderboard", response_model=list[LeaderboardEntry])
+def get_leaderboard(
+    period: str = "all",
+    db: Session = Depends(get_db),
+):
+    cutoff = None
+    if period == "7d":
+        cutoff = datetime.utcnow() - timedelta(days=7)
+    elif period == "30d":
+        cutoff = datetime.utcnow() - timedelta(days=30)
+
+    q = db.query(UserPick, User).join(User, UserPick.user_id == User.id)
+    if cutoff:
+        q = q.filter(UserPick.match_date >= cutoff)
+
+    by_user: dict[int, tuple[str, list[UserPick]]] = {}
+    for pick, user in q.all():
+        if user.id not in by_user:
+            by_user[user.id] = (user.username, [])
+        by_user[user.id][1].append(pick)
+
+    entries = []
+    for username, picks in by_user.values():
+        resolved = sorted(
+            [p for p in picks if p.actual_result is not None],
+            key=lambda p: p.match_date,
+        )
+        if len(resolved) < 5:
+            continue
+
+        correct_count = sum(1 for p in resolved if p.is_correct)
+        best, run = 0, 0
+        for p in resolved:
+            run = run + 1 if p.is_correct else 0
+            best = max(best, run)
+
+        entries.append({
+            "username": username,
+            "total_picks": len(picks),
+            "correct": correct_count,
+            "accuracy": correct_count / len(resolved),
+            "best_streak": best,
+        })
+
+    entries.sort(key=lambda e: (-e["accuracy"], -e["correct"]))
+    return [LeaderboardEntry(rank=i + 1, **e) for i, e in enumerate(entries)]
 
 
 @router.get("", response_model=list[PickOut])

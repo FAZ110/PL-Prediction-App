@@ -12,6 +12,7 @@ import { RegisterPage } from '@/pages/RegisterPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { PicksPage } from '@/pages/PicksPage'
+import { LeaderboardPage } from '@/pages/LeaderboardPage'
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -59,6 +60,10 @@ const router = createBrowserRouter([
             {
                 path: 'picks',
                 element: <ProtectedRoute><PicksPage /></ProtectedRoute>,
+            },
+            {
+                path: 'leaderboard',
+                element: <ProtectedRoute><LeaderboardPage /></ProtectedRoute>,
             },
             { path: '*', element: <NotFoundPage /> },
         ],

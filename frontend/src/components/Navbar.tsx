@@ -88,6 +88,7 @@ export const Navbar = () => {
                     <NavLink to="/" end className={navLinkClass}>Home</NavLink>
                     <NavLink to="/predict" className={navLinkClass}>Prediction Lab</NavLink>
                     <NavLink to="/picks" className={navLinkClass}>Picks</NavLink>
+                    <NavLink to="/leaderboard" className={navLinkClass}>Leaderboard</NavLink>
                 </nav>
 
                 {/* Right side */}
@@ -182,6 +183,7 @@ export const Navbar = () => {
                     <NavLink to="/" end className={navLinkClass}>Home</NavLink>
                     <NavLink to="/predict" className={navLinkClass}>Prediction Lab</NavLink>
                     <NavLink to="/picks" className={navLinkClass}>Picks</NavLink>
+                    <NavLink to="/leaderboard" className={navLinkClass}>Leaderboard</NavLink>
                 </nav>
 
                 <div className="mx-4 h-px bg-border" />

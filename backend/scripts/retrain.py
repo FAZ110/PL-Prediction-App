@@ -73,7 +73,6 @@ def retrain_model(league_code: str = 'PL'):
         print("Not enough data to train! Skipping.")
         return
 
-    # Temporalny split — ostatnie 20% meczów jako test (nie losowy)
     split_idx = int(len(df) * 0.8)
     train_df = df.iloc[:split_idx]
     test_df  = df.iloc[split_idx:]
@@ -83,7 +82,6 @@ def retrain_model(league_code: str = 'PL'):
     X_test  = test_df[features]
     y_test  = y_encoded[split_idx:]
 
-    # Recency weights — mecze nowsze ważą więcej (decay wykładniczy)
     max_year = df['date'].dt.year.max()
     w_train = np.exp(0.15 * (train_df['date'].dt.year - max_year)).values
 
