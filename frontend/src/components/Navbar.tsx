@@ -39,7 +39,6 @@ export const Navbar = () => {
     const [mobileOpen, setMobileOpen] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
 
-    // Close desktop dropdown on outside click
     useEffect(() => {
         const handler = (e: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -50,7 +49,6 @@ export const Navbar = () => {
         return () => document.removeEventListener('mousedown', handler)
     }, [])
 
-    // Close mobile menu on route change
     useEffect(() => {
         setMobileOpen(false)
     }, [location.pathname])
@@ -66,7 +64,7 @@ export const Navbar = () => {
 
     return (
         <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur-md">
-            <div className="h-0.5 bg-gradient-to-r from-blue-500 via-violet-500 to-pink-500" />
+            <div className="h-0.5 bg-linear-to-r from-blue-500 via-violet-500 to-pink-500" />
 
             <div className="container mx-auto flex h-13 items-center justify-between px-4">
 
@@ -77,7 +75,7 @@ export const Navbar = () => {
                     </span>
                     <span className="font-bold text-foreground">
                         Football{' '}
-                        <span className="bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent">
+                        <span className="bg-lienar-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent">
                             Predictor
                         </span>
                     </span>
@@ -113,7 +111,7 @@ export const Navbar = () => {
                                     onClick={() => setOpen(o => !o)}
                                     className="flex items-center gap-2 rounded-full border px-2 py-1 text-sm transition-all duration-200 hover:bg-accent"
                                 >
-                                    <div className="flex size-6 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-violet-500 text-white text-xs font-bold">
+                                    <div className="flex size-6 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-violet-500 text-white text-xs font-bold">
                                         {initial}
                                     </div>
                                     <span className="max-w-25 truncate font-medium">{user.username}</span>
@@ -130,7 +128,7 @@ export const Navbar = () => {
                                         : 'opacity-0 scale-95 -translate-y-1 pointer-events-none',
                                 ].join(' ')}>
                                     <div className="flex items-center gap-2.5 px-2 py-2">
-                                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-violet-500 text-white text-sm font-bold">
+                                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-violet-500 text-white text-sm font-bold">
                                             {initial}
                                         </div>
                                         <div className="min-w-0">
@@ -191,7 +189,7 @@ export const Navbar = () => {
                 {user ? (
                     <div className="flex flex-col px-4 py-3 gap-1">
                         <div className="flex items-center gap-2.5 px-2 py-2">
-                            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-violet-500 text-white text-sm font-bold">
+                            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-violet-500 text-white text-sm font-bold">
                                 {initial}
                             </div>
                             <div className="min-w-0">

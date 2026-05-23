@@ -16,10 +16,11 @@ export interface UpcomingMatchCardProps {
 
 export const UpcomingMatchCard = ({ match, league, existing, isPending, onPick }: UpcomingMatchCardProps) => {
     const [showStats, setShowStats] = useState(false)
-    const { data: predData, isLoading: predLoading } = useMatchPrediction(match.homeTeam, match.awayTeam, league)
+    const { data: predData, isLoading: predLoading, isError: predError } = useMatchPrediction(match.homeTeam, match.awayTeam, league)
 
     const prediction = predData && 'prediction' in predData ? predData as PredictionResponse : null
     const modelPick = prediction ? PRED_TO_PICK[prediction.prediction] : null
+    const showNoData = !predLoading && (predError || !prediction)
 
     return (
         <div className="flex flex-col gap-2 rounded-lg border bg-card p-3">
@@ -38,13 +39,16 @@ export const UpcomingMatchCard = ({ match, league, existing, isPending, onPick }
 
             {/* Model prediction row */}
             {predLoading && <div className="h-5 w-48 animate-pulse rounded bg-muted" />}
+            {showNoData && (
+                <span className="text-xs text-muted-foreground">No prediction data available</span>
+            )}
             {prediction && (
                 <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs text-muted-foreground">Model:</span>
                     <span className={`rounded px-2 py-0.5 text-xs font-semibold ${MODEL_COLOR[prediction.prediction]}`}>
                         {prediction.prediction}
                     </span>
-                    <div className="flex items-center gap-1.5 flex-1 min-w-[120px]">
+                    <div className="flex items-center gap-1.5 flex-1 min-w-30">
                         <div className="h-1.5 flex-1 rounded-full bg-muted">
                             <div
                                 className="h-1.5 rounded-full bg-primary transition-all"

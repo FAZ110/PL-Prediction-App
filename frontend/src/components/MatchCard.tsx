@@ -2,9 +2,9 @@ import { format } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { usePredict } from '@/hooks/usePredict'
-import type { UpcomingMatch, League } from '@/types'
+import { useMatchPrediction } from '@/hooks/useMatchPrediction'
+import { MODEL_COLOR } from '@/components/picks/picksConstants'
+import type { UpcomingMatch, League, PredictionResponse } from '@/types'
 import { displayTeam } from '@/lib/teamNames'
 
 const LEAGUE_LABELS: Record<string, string> = {
@@ -14,12 +14,6 @@ const LEAGUE_LABELS: Record<string, string> = {
     SA:  'Serie A',
 }
 
-const RESULT_COLOR: Record<string, string> = {
-    'Home Win': 'text-green-600',
-    'Draw':     'text-yellow-500',
-    'Away Win': 'text-red-500',
-}
-
 interface MatchCardProps {
     match: UpcomingMatch
     league: League
@@ -27,13 +21,9 @@ interface MatchCardProps {
 
 export const MatchCard = ({ match, league }: MatchCardProps) => {
     const formattedDate = format(new Date(match.date), 'EEE d MMM, HH:mm')
-    const { mutate, data: result, isPending } = usePredict()
-
-    const handlePredict = () => {
-        mutate({ homeTeam: match.homeTeam, awayTeam: match.awayTeam, league })
-    }
-
-    const prediction = result && 'prediction' in result ? result : null
+    const { data: predData, isLoading, isError } = useMatchPrediction(match.homeTeam, match.awayTeam, league)
+    const prediction = predData && 'prediction' in predData ? predData as PredictionResponse : null
+    const noData = !isLoading && !prediction
 
     return (
         <Card>
@@ -49,26 +39,35 @@ export const MatchCard = ({ match, league }: MatchCardProps) => {
                     <span className="flex-1 text-left">{displayTeam(match.awayTeam)}</span>
                 </div>
 
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <CalendarIcon className="size-3" />
-                        {formattedDate}
-                    </div>
-                    {!prediction && (
-                        <Button variant="outline" size="sm" onClick={handlePredict} disabled={isPending}>
-                            {isPending ? '…' : 'Predict'}
-                        </Button>
-                    )}
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <CalendarIcon className="size-3" />
+                    {formattedDate}
                 </div>
 
+                {isLoading && <div className="h-4 w-36 animate-pulse rounded bg-muted" />}
+
                 {prediction && (
-                    <div className="flex items-center justify-between border-t pt-2">
-                        <span className={`text-sm font-semibold ${RESULT_COLOR[prediction.prediction] ?? ''}`}>
+                    <div className="flex items-center gap-2 border-t pt-2">
+                        <span className={`rounded px-2 py-0.5 text-xs font-semibold ${MODEL_COLOR[prediction.prediction]}`}>
                             {prediction.prediction}
                         </span>
-                        <span className="text-xs text-muted-foreground">
-                            {Math.round(prediction.confidence * 100)}% confidence
-                        </span>
+                        <div className="flex flex-1 items-center gap-1.5">
+                            <div className="h-1.5 flex-1 rounded-full bg-muted">
+                                <div
+                                    className="h-1.5 rounded-full bg-primary transition-all"
+                                    style={{ width: `${Math.round(prediction.confidence * 100)}%` }}
+                                />
+                            </div>
+                            <span className="text-xs tabular-nums text-muted-foreground">
+                                {Math.round(prediction.confidence * 100)}%
+                            </span>
+                        </div>
+                    </div>
+                )}
+
+                {(noData || isError) && (
+                    <div className="border-t pt-2 text-xs text-muted-foreground">
+                        No prediction data available
                     </div>
                 )}
             </CardContent>
